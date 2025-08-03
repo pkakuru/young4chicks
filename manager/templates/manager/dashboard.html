@@ -1,0 +1,144 @@
+{% extends 'manager/base.html' %}
+{% load humanize %}
+{% block title %}Dashboard | Young4ChickS{% endblock %}
+
+{% block content %}
+<h2>📊 Dashboard</h2>
+<p class="text-muted">Welcome, Brooder Manager! Here's a snapshot of system activity.</p>
+
+<!-- Row 1: Sales Overview -->
+<div class="row mt-4">
+  <div class="col-md-4">
+    <div class="card-summary border-left-success">
+      <h6>Total Chicks Sold</h6>
+      <h3>{{ total_chicks_sold }}</h3>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card-summary border-left-primary">
+      <h6>Total Revenue</h6>
+      <h3>UGX {{ total_revenue|intcomma }}</h3>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card-summary border-left-info">
+      <h6>Chicks Sold This Week</h6>
+      <h3>{{ chicks_this_week }}</h3>
+    </div>
+  </div>
+</div>
+
+<!-- Row 2: Revenue and Stock -->
+<div class="row">
+  <div class="col-md-4">
+    <div class="card-summary border-left-warning">
+      <h6>Revenue This Week</h6>
+      <h3>UGX {{ revenue_this_week|intcomma }}</h3>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card-summary border-left-secondary">
+      <h6>Pending Requests</h6>
+      <h3>{{ pending_requests }}</h3>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card-summary border-left-danger">
+      <h6>Total Remaining Stock</h6>
+      <h3>{{ total_remaining_stock }}</h3>
+    </div>
+  </div>
+</div>
+
+<!-- Row 3: Chick Types -->
+<div class="row">
+  <div class="col-md-4">
+    <div class="card-summary border-left-dark">
+      <h6>Broiler - Local In Stock</h6>
+      <h3>{{ stock_dict.broiler_local|default:"0" }}</h3>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card-summary border-left-dark">
+      <h6>Broiler - Exotic In Stock</h6>
+      <h3>{{ stock_dict.broiler_exotic|default:"0" }}</h3>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card-summary border-left-dark">
+      <h6>Layer - Local In Stock</h6>
+      <h3>{{ stock_dict.layer_local|default:"0" }}</h3>
+    </div>
+  </div>
+</div>
+<div class="row">
+  <div class="col-md-4">
+    <div class="card-summary border-left-dark">
+      <h6>Layer - Exotic In Stock</h6>
+      <h3>{{ stock_dict.layer_exotic|default:"0" }}</h3>
+    </div>
+  </div>
+</div>
+
+<!-- Row 4: System Stats -->
+<div class="row">
+  <div class="col-md-4">
+    <div class="card-summary border-left-secondary">
+      <h6>Registered Farmers</h6>
+      <h3>{{ total_farmers }}</h3>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card-summary border-left-info">
+      <h6>Approved This Month</h6>
+      <h3>{{ approved_this_month }}</h3>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card-summary border-left-warning">
+      <h6>Feeds Due Soon</h6>
+      <h3>14</h3> <!-- Placeholder; update with real data later -->
+    </div>
+  </div>
+</div>
+
+<!-- Row 5: Chart + Recent Activity + Events -->
+<div class="row mt-4">
+  <div class="col-md-6">
+    <div class="card p-3 mb-4">
+      <h5 class="card-title">📈 Sales Overview Chart</h5>
+      <div id="chart-placeholder" style="height: 200px; background-color: #f1f1f1; border-radius: 6px;">
+        <!-- Chart will be embedded here later -->
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-6">
+    <div class="card p-3 mb-4">
+      <h5 class="card-title">🔄 Recent Activity</h5>
+      <ul class="activity-feed">
+        <li>✅ Approved 100 chicks for Jane Atwine</li>
+        <li>📦 Added 200 Layer chicks to stock</li>
+        <li>❌ Rejected Kato Yusuf’s request – Exceeded limit</li>
+        <li>✅ Marked 150 chicks as collected by M. Kizza</li>
+        <li>📢 Posted announcement: Next delivery on July 15</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<div class="row mb-4">
+  <div class="col-md-12">
+    <div class="card p-3">
+      <h5 class="card-title">📅 Upcoming Events</h5>
+      <ul class="list-group list-group-flush">
+        <li class="list-group-item">🗓️ Training – Brooding Basics, July 20</li>
+        <li class="list-group-item">🗓️ Feed Collection – July 25</li>
+        <li class="list-group-item">🗓️ Vaccination Reminder – Aug 1</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<p class="text-muted mt-5">Use the sidebar to navigate through the system. You can add stock, approve requests, and more.</p>
+{% endblock %}

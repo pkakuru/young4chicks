@@ -1,0 +1,197 @@
+{% extends 'manager/base.html' %}
+{% block title %}Chick Stock{% endblock %}
+{% block content %}
+<h2>📥 Chick Requests</h2>
+<p class="text-muted">Review pending requests and view approval history.</p>
+
+<!-- Tabs -->
+<ul class="nav nav-tabs mb-3" id="requestTabs" role="tablist">
+    <li class="nav-item">
+        <a class="nav-link active" id="pending-tab" data-toggle="tab" href="#pending" role="tab">⏳ Pending Requests</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link" id="approved-tab" data-toggle="tab" href="#approved" role="tab">✅ Approved / Picked</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link" id="history-tab" data-toggle="tab" href="#history" role="tab">📜 All History</a>
+    </li>
+</ul>
+
+<!-- Tab Content -->
+<div class="tab-content" id="requestTabsContent">
+
+    <!-- Pending Requests Tab -->
+    {% if messages %}
+  {% for message in messages %}
+    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+      {{ message }}
+      <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+        <span aria-hidden="true">&times;</span>
+      </button>
+    </div>
+  {% endfor %}
+{% endif %}
+
+
+    <div class="tab-pane fade show active" id="pending" role="tabpanel">
+        <div class="card p-3 mb-4">
+            <h5 class="mb-3">⏳ Pending Chick Requests</h5>
+
+            <div class="mb-3">
+                <input type="text" class="form-control" placeholder="Search by farmer name, NIN, or request ID...">
+            </div>
+
+            <div class="table-responsive">
+                <table class="table table-sm table-bordered table-hover">
+                    <thead class="thead-light">
+                        <tr>
+                            <th>Request ID</th>
+                            <th>Farmer</th>
+                            <th>NIN</th>
+                            <th>Type</th>
+                            <th>Qty</th>
+                            <th>Farmer Type</th>
+                            <th>Submitted On</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for request in pending_requests %}
+                        <tr>
+                            <td class="align-middle">#REQ{{ request.id }}</td>
+                            <td class="align-middle">{{ request.farmer.name }}</td>
+                            <td class="align-middle">{{ request.farmer.nin }}</td>
+                            <td class="align-middle">{{ request.chick_type|title }}</td>
+                            <td class="align-middle">{{ request.quantity }}</td>
+                            <td class="align-middle">{{ request.farmer.farmer_type|title }}</td>
+                            <td class="align-middle">{{ request.submitted_on|date:"M d, Y" }}</td>
+                            <td class="align-middle">
+                                <form method="post" action="{% url 'approve_reject_request' request.id %}"
+                                    style="display:inline-block;">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="action" value="approve">
+                                    <button type="submit" class="btn btn-sm btn-success">Approve</button>
+                                </form>
+                                <form method="post" action="{% url 'approve_reject_request' request.id %}"
+                                    style="display:inline-block;">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="action" value="reject">
+                                    <button type="submit" class="btn btn-sm btn-outline-danger">Reject</button>
+                                </form>
+                            </td>
+
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="8" class="text-center text-muted">No pending requests found.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+
+                </table>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Approved / Picked Requests Tab -->
+    <div class="tab-pane fade" id="approved" role="tabpanel">
+        <div class="card p-3 mb-4">
+            <h5 class="mb-3">✅ Approved & Picked Requests</h5>
+
+            <div class="mb-3">
+                <input type="text" class="form-control" placeholder="Search by farmer name, NIN, or date...">
+            </div>
+
+            <div class="table-responsive">
+                <table class="table table-bordered table-sm">
+                    <thead class="thead-light">
+                        <tr>
+                            <th>Request ID</th>
+                            <th>Farmer</th>
+                            <th>Type</th>
+                            <th>Qty</th>
+                            <th>Status</th>
+                            <th>Approved On</th>
+                            <th>Approved By</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for request in approved_requests %}
+                        <tr>
+                            <td>#REQ{{ request.id }}</td>
+                            <td>{{ request.farmer.name }}</td>
+                            <td>{{ request.chick_type|title }}</td>
+                            <td>{{ request.quantity }}</td>
+                            <td><span class="badge badge-success">Approved</span></td>
+                            <td>{{ request.approval_date|date:"M d, Y" }}</td>
+                            <td>{{ request.approved_by.get_full_name | default:request.approved_by.username }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="7" class="text-center text-muted">No approved requests yet.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- All History Tab -->
+    <div class="tab-pane fade" id="history" role="tabpanel">
+        <div class="card p-3 mb-4">
+            <h5 class="mb-3">📜 All Request History</h5>
+
+            <div class="mb-3">
+                <input type="text" class="form-control" placeholder="Search all records...">
+            </div>
+
+            <div class="table-responsive">
+                <table class="table table-bordered table-sm">
+                    <thead class="thead-light">
+                        <tr>
+                            <th>Request ID</th>
+                            <th>Farmer</th>
+                            <th>Type</th>
+                            <th>Qty</th>
+                            <th>Status</th>
+                            <th>Decision Date</th>
+                            <th>Handled By</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for request in history_requests %}
+                        <tr>
+                            <td>#REQ{{ request.id }}</td>
+                            <td>{{ request.farmer.name }}</td>
+                            <td>{{ request.chick_type|title }}</td>
+                            <td>{{ request.quantity }}</td>
+                            <td>
+                                <span class="badge
+                                {% if request.status == 'approved' %}badge-success
+                                {% elif request.status == 'rejected' %}badge-danger
+                                {% else %}badge-secondary
+                                {% endif %}">
+                                    {{ request.status|title }}
+                                </span>
+                            </td>
+                            <td>{{ request.approval_date|date:"M d, Y" }}</td>
+                            <td>{{ request.approved_by.get_full_name | default_if_none:request.approved_by.username }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="7" class="text-center text-muted">No historical records yet.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+
+                </table>
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

@@ -1,0 +1,59 @@
+{% extends 'manager/base.html' %}
+{% block title %}Chick Stock{% endblock %}
+{% block content %}
+  <h2 class="mb-1">👤 Registered Farmers</h2>
+    <p class="text-muted mb-4">View details of all youth farmers registered in the system.</p>
+
+    <!-- Search + Table Card -->
+    <div class="card p-4">
+      <h5 class="mb-3">📋 Farmers List</h5>
+
+      <!-- Search -->
+      <div class="form-group mb-4">
+        <input type="text" class="form-control" placeholder="Search by name, NIN, or recommender...">
+      </div>
+
+      <!-- Table -->
+      <!-- Table -->
+<div class="table-responsive">
+  <table class="table table-sm table-bordered table-hover">
+    <thead class="thead-light">
+      <tr>
+        <th>#</th>
+        <th>Name</th>
+        <th>Age</th>
+        <th>Gender</th>
+        <th>NIN</th>
+        <th>Recommender</th>
+        <th>Contact</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+  {% for farmer in farmers %}
+  <tr>
+    <td class="align-middle">{{ forloop.counter }}</td>
+    <td class="align-middle">{{ farmer.name }}</td>
+    <td class="align-middle">{{ farmer.age }}</td>
+    <td class="align-middle">{{ farmer.gender }}</td>
+    <td class="align-middle">{{ farmer.nin }}</td>
+    <td class="align-middle">{{ farmer.recommender_name }} {{ farmer.recommender_nin }}</td>
+    <td class="align-middle">{{ farmer.contact }}</td>
+    <td class="align-middle">
+      <a href="{% url 'manager_farmer_request_history' farmer.nin %}" class="btn btn-sm btn-outline-primary">
+        View Requests
+      </a>
+    </td>
+  </tr>
+  {% empty %}
+  <tr>
+    <td colspan="8" class="text-muted text-center">No farmers found.</td>
+  </tr>
+  {% endfor %}
+</tbody>
+
+  </table>
+</div>
+
+    </div>
+{% endblock %}

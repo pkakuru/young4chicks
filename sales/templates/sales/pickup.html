@@ -1,0 +1,64 @@
+{% extends 'sales/base.html' %}
+
+{% block title %}Submit Request | Young4ChickS{% endblock %}
+
+{% block content %}
+<h2>✅ Mark Pickup as Completed</h2>
+    <p class="text-muted">Search a farmer to view approved requests ready for pickup confirmation.</p>
+
+    <!-- Search Form -->
+    <form class="mb-4">
+      <div class="row g-3">
+        <div class="col-md-9">
+          <input type="text" class="form-control" placeholder="Enter Farmer Name or NIN..." required>
+        </div>
+        <div class="col-md-3">
+          <button type="submit" class="btn btn-primary w-100">🔍 Search</button>
+        </div>
+      </div>
+    </form>
+
+    <!-- Results Table -->
+    <div class="card p-3">
+      <h5 class="mb-3">Approved Requests (Not Yet Picked)</h5>
+      <div class="table-responsive">
+        <table class="table table-bordered align-middle">
+          <thead class="table-light">
+            <tr>
+              <th>Request ID</th>
+              <th>Date</th>
+              <th>Chick Type</th>
+              <th>Quantity</th>
+              <th>Farmer Type</th>
+              <th>Status</th>
+              <th>Pickup Notes</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for req in requests %}
+<tr>
+  <td>#{{ req.id }}</td>
+  <td>{{ req.approval_date|date:"M d, Y" }}</td>
+  <td>{{ req.get_chick_type_display }}</td>
+  <td>{{ req.quantity }}</td>
+  <td>{{ req.farmer.farmer_type|capfirst }}</td>
+  <td><span class="badge bg-success">Approved</span></td>
+  <td>
+    {% if req.pickup_notes %}
+      {{ req.pickup_notes }}
+    {% else %}
+      <em class="text-muted">Pending entry</em>
+    {% endif %}
+  </td>
+  <td>
+    <a href="{% url 'mark_request_as_picked' req.id %}" class="btn btn-success btn-sm">✅ Confirm Pickup</a>
+  </td>
+</tr>
+{% endfor %}
+
+          </tbody>
+        </table>
+      </div>
+    </div>
+{% endblock %}

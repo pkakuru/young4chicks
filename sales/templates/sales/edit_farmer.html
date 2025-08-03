@@ -1,0 +1,97 @@
+{% extends 'sales/base.html' %}
+
+{% block title %}Edit Farmer | Young4ChickS{% endblock %}
+
+{% block content %}
+<div class="container">
+  <div class="row justify-content-center">
+    <div class="col-md-8">
+      <!-- Card wrapper -->
+      <div class="card shadow-sm mt-4 mb-5">
+        <div class="card-body">
+          <h4 class="card-title text-center mb-4">✏️ Edit Farmer Details</h4>
+
+          {% if messages %}
+            {% for message in messages %}
+              <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+            {% endfor %}
+          {% endif %}
+
+          <form method="post">
+            {% csrf_token %}
+
+            <div class="form-row">
+              <div class="form-group col-md-6">
+                <label for="name">Full Name</label>
+                <input type="text" name="name" class="form-control {% if errors.name %}is-invalid{% endif %}" value="{{ farmer.name }}" required>
+                {% if errors.name %}
+                  <div class="invalid-feedback">{{ errors.name }}</div>
+                {% endif %}
+              </div>
+
+              <div class="form-group col-md-3">
+                <label for="dob">Date of Birth</label>
+                <input type="date" name="dob" class="form-control {% if errors.dob %}is-invalid{% endif %}" value="{{ farmer.dob|date:'Y-m-d' }}" required>
+                {% if errors.dob %}
+                  <div class="invalid-feedback">{{ errors.dob }}</div>
+                {% endif %}
+              </div>
+
+              <div class="form-group col-md-3">
+                <label for="gender">Gender</label>
+                <select name="gender" class="form-control {% if errors.gender %}is-invalid{% endif %}" required>
+                  <option value="">Select...</option>
+                  <option value="M" {% if farmer.gender == 'M' %}selected{% endif %}>Male</option>
+                  <option value="F" {% if farmer.gender == 'F' %}selected{% endif %}>Female</option>
+                </select>
+                {% if errors.gender %}
+                  <div class="invalid-feedback">{{ errors.gender }}</div>
+                {% endif %}
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group col-md-6">
+                <label for="nin">Youth NIN Number</label>
+                <input type="text" name="youth_nin" class="form-control {% if errors.nin %}is-invalid{% endif %}" value="{{ farmer.nin }}" required>
+                {% if errors.nin %}
+                  <div class="invalid-feedback">{{ errors.nin }}</div>
+                {% endif %}
+              </div>
+
+              <div class="form-group col-md-6">
+                <label for="phone">Phone Number</label>
+                <input type="text" name="phone" class="form-control {% if errors.contact %}is-invalid{% endif %}" value="{{ farmer.contact }}" required>
+                {% if errors.contact %}
+                  <div class="invalid-feedback">{{ errors.contact }}</div>
+                {% endif %}
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group col-md-6">
+                <label for="recommender_name">Recommender Name</label>
+                <input type="text" name="recommender_name" class="form-control {% if errors.recommender %}is-invalid{% endif %}" value="{{ farmer.recommender }}" required>
+                {% if errors.recommender %}
+                  <div class="invalid-feedback">{{ errors.recommender }}</div>
+                {% endif %}
+              </div>
+
+              <div class="form-group col-md-6">
+                <label for="recommender_nin">Recommender NIN</label>
+                <input type="text" name="recommender_nin" class="form-control {% if errors.recommender_nin %}is-invalid{% endif %}" value="{{ farmer.recommender_nin }}" required>
+                {% if errors.recommender_nin %}
+                  <div class="invalid-feedback">{{ errors.recommender_nin }}</div>
+                {% endif %}
+              </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-block">💾 Save Changes</button>
+            <a href="{% url 'register_farmer' %}" class="btn btn-outline-secondary btn-block mt-2">⬅ Back to Farmer List</a>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,80 @@
+{% extends 'sales/base.html' %}
+
+{% block title %}Submit Request | Young4ChickS{% endblock %}
+
+{% block content %}
+<h2>📄 Farmer Request History</h2>
+    <p class="text-muted">Search for a registered farmer by name or NIN to view their request history.</p>
+
+    <!-- Search -->
+    <form class="mb-4">
+      <div class="row g-3">
+        <div class="col-md-9">
+          <input type="text" class="form-control" placeholder="Enter Farmer Name or NIN..." required>
+        </div>
+        <div class="col-md-3">
+          <button type="submit" class="btn btn-primary w-100">🔍 Search</button>
+        </div>
+      </div>
+    </form>
+
+    <!-- Farmer Details -->
+    <div class="card p-3 mb-4">
+      <h5 class="mb-3">👤 Farmer: Jane Atwine</h5>
+      <div class="row">
+        <div class="col-md-4">
+          <p><strong>Age:</strong> 24</p>
+          <p><strong>Gender:</strong> Female</p>
+        </div>
+        <div class="col-md-4">
+          <p><strong>NIN:</strong> CF12345678</p>
+          <p><strong>Contact:</strong> 0789123456</p>
+        </div>
+        <div class="col-md-4">
+          <p><strong>Recommender:</strong> Mr. Bukenya</p>
+          <p><strong>Rec. NIN:</strong> CF00009999</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Request History Table -->
+    <div class="card p-3">
+      <h5 class="mb-3">📋 Chick Request History</h5>
+      <div class="table-responsive">
+        <table class="table table-bordered align-middle">
+          <thead class="table-light">
+            <tr>
+              <th>#</th>
+              <th>Date</th>
+              <th>Type</th>
+              <th>Quantity</th>
+              <th>Farmer Type</th>
+              <th>Status</th>
+              <th>Approval Notes</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>1</td>
+              <td>Jul 7, 2025</td>
+              <td>Broiler</td>
+              <td>100</td>
+              <td>Starter</td>
+              <td><span class="badge bg-success">Approved</span></td>
+              <td>Pickup scheduled for Jul 15</td>
+            </tr>
+            <tr>
+              <td>2</td>
+              <td>Mar 2, 2025</td>
+              <td>Layer</td>
+              <td>100</td>
+              <td>Starter</td>
+              <td><span class="badge bg-danger">Rejected</span></td>
+              <td>Requested too early</td>
+            </tr>
+            <!-- More rows as needed -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+{% endblock %}

@@ -1,0 +1,52 @@
+{% extends 'sales/base.html' %}
+{% block title %}Confirm Pickup | Young4ChickS{% endblock %}
+
+{% block content %}
+<h2 class="mb-1">✅ Confirm Chick Pickup</h2>
+<p class="text-muted mb-4">Review request details and confirm that the farmer has physically picked the chicks.</p>
+
+<!-- Request Details -->
+<div class="card p-4 mb-4">
+  <h5 class="mb-3">📄 Request Details</h5>
+  <div class="row">
+    <div class="col-md-6">
+      <p><strong>Farmer:</strong> {{ request.farmer.name }}</p>
+      <p><strong>Farmer NIN:</strong> {{ request.farmer.nin }}</p>
+      <p><strong>Farmer Type:</strong> {{ request.farmer.farmer_type|capfirst }}</p>
+    </div>
+    <div class="col-md-6">
+      <p><strong>Request ID:</strong> #{{ request.id }}</p>
+      <p><strong>Chick Type:</strong> {{ request.get_chick_type_display }}</p>
+      <p><strong>Quantity:</strong> {{ request.quantity }}</p>
+    </div>
+  </div>
+</div>
+
+<!-- Confirmation Form -->
+<div class="card p-4">
+  <h5 class="mb-3">📝 Pickup Confirmation & Payments</h5>
+  <form method="post">
+    {% csrf_token %}
+    
+    <div class="form-group mb-3">
+      <label><strong>Pickup Notes:</strong></label>
+      <textarea name="pickup_notes" class="form-control" rows="3" placeholder="E.g. Picked by farmer personally..." required></textarea>
+    </div>
+
+    <div class="form-group mb-3">
+      <label><strong>💵 Payment for Chicks (UGX):</strong></label>
+      <input type="number" name="paid_chicks" class="form-control" placeholder="Enter amount (e.g. 165000)" min="0">
+    </div>
+
+    <div class="form-group mb-3">
+      <label><strong>💵 Payment for Feeds (UGX):</strong></label>
+      <input type="number" name="paid_feeds" class="form-control" placeholder="Enter amount (e.g. 260000)" min="0">
+    </div>
+
+    <div class="d-flex justify-content-start mt-4">
+      <button type="submit" class="btn btn-success">✅ Confirm Pickup</button>
+      <a href="{% url 'sales_pickup' %}" class="btn btn-outline-secondary ml-3">🔙 Back</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

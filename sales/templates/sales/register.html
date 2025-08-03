@@ -1,0 +1,188 @@
+{% extends 'sales/base.html' %}
+
+{% block title %}Submit Request | Young4ChickS{% endblock %}
+
+{% block content %}
+<h2 class="mb-1">📝 Register New Farmer</h2>
+<p class="text-muted mb-4">Fill in all required fields to register a new young farmer.</p>
+{% if messages %}
+{% for message in messages %}
+<div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+  {{ message }}
+  <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+    <span aria-hidden="true">&times;</span>
+  </button>
+</div>
+{% endfor %}
+{% endif %}
+
+
+<!-- Registration Form Card -->
+<div class="card shadow-sm p-4 mb-5">
+  <h5 class="mb-4">👤 Farmer Information</h5>
+  <form method="post" action="{% url 'register_farmer' %}">
+    {% csrf_token %}
+    <div class="form-row">
+      <div class="form-group col-md-6">
+        <label>Full Name</label>
+        <input type="text" name="name" class="form-control" placeholder="e.g. Kato Yusuf" required>
+      </div>
+      <div class="form-group col-md-3">
+        <label>DOB</label>
+        <input type="date" name="dob" class="form-control" placeholder="e.g. 02-06-2005" required>
+      </div>
+      <div class="form-group col-md-3">
+        <label>Gender</label>
+        <select name="gender" class="form-control" required>
+          <option selected disabled>Select...</option>
+          <option value="M">Male</option>
+          <option value="F">Female</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group col-md-6">
+        <label>Contact Number</label>
+        <input type="tel" name="contact" class="form-control" placeholder="e.g. 0772123456" required>
+      </div>
+      <div class="form-group col-md-6">
+        <label>Youth NIN Number</label>
+        <input type="text" name="nin" id="youth_nin" maxlength="14" class="form-control"
+          placeholder="e.g. CM83061102J2XL" required oninput="this.value = this.value.toUpperCase();">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group col-md-6">
+        <label>Recommender Name</label>
+        <input type="text" name="recommender" class="form-control" placeholder="e.g. Mr. Ssebunya" required>
+      </div>
+      <div class="form-group col-md-6">
+        <label>Recommender NIN</label>
+        <input type="text" name="recommender_nin" id="recommender_nin" maxlength="14" class="form-control"
+          placeholder="e.g. CM83061102J2XL" required oninput="this.value = this.value.toUpperCase();">
+
+      </div>
+    </div>
+    <button type="submit" class="btn btn-success mt-2">Register Farmer</button>
+  </form>
+</div>
+
+<!-- Search + Farmers Table Card -->
+<div class="card shadow-sm p-4">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h5 class="mb-0">📋 Registered Farmers</h5>
+    <input id="filter-input" type="text" class="form-control form-control-sm w-50" placeholder="Search farmers...">
+  </div>
+
+  <div class="table-responsive">
+    <table class="table table-sm table-bordered table-hover mb-0" id="farmersTable">
+      <thead class="thead-light">
+        <tr>
+          <th>#</th>
+          <th>Name</th>
+          <th>Age</th>
+          <th>Gender</th>
+          <th>NIN</th>
+          <th>Recommender</th>
+          <th>Contact</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for farmer in page_obj %}
+        <tr>
+          <td class="align-middle">{{ forloop.counter }}</td>
+          <td class="align-middle">{{ farmer.name }}</td>
+          <td class="align-middle">{{ farmer.age }}</td>
+          <td class="align-middle">
+            {% if farmer.gender == 'M' %}Male{% else %}Female{% endif %}
+          </td>
+          <td class="align-middle">{{ farmer.nin }}</td>
+          <td class="align-middle">{{ farmer.recommender }}</td>
+          <td class="align-middle">{{ farmer.contact }}</td>
+          <td class="align-middle">
+            <a href="{% url 'edit_farmer' farmer.id %}" class="btn btn-sm btn-outline-secondary mr-1">Edit</a>
+            <a href="{% url 'delete_farmer' farmer.id %}" class="btn btn-sm btn-outline-danger"
+              onclick="return confirm('Are you sure you want to delete this farmer?');">Delete</a>
+          </td>
+
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="8" class="text-center text-muted">No farmers registered yet.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+
+    </table>
+
+    <!-- Pagination Controls -->
+<nav aria-label="Page navigation" class="mt-4">
+  <ul class="pagination justify-content-center">
+    {% if page_obj.has_previous %}
+      <li class="page-item">
+        <a class="page-link text-success" href="?page={{ page_obj.previous_page_number }}">Previous</a>
+      </li>
+    {% else %}
+      <li class="page-item disabled">
+        <a class="page-link text-muted" href="#">Previous</a>
+      </li>
+    {% endif %}
+
+    {% for num in page_obj.paginator.page_range %}
+      {% if page_obj.number == num %}
+        <li class="page-item active">
+          <span class="page-link bg-success border-success">{{ num }}</span>
+        </li>
+      {% else %}
+        <li class="page-item">
+          <a class="page-link text-success" href="?page={{ num }}">{{ num }}</a>
+        </li>
+      {% endif %}
+    {% endfor %}
+
+    {% if page_obj.has_next %}
+      <li class="page-item">
+        <a class="page-link text-success" href="?page={{ page_obj.next_page_number }}">Next</a>
+      </li>
+    {% else %}
+      <li class="page-item disabled">
+        <a class="page-link text-muted" href="#">Next</a>
+      </li>
+    {% endif %}
+  </ul>
+</nav>
+
+
+
+
+
+
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+  // Table filter logic using jQuery (Bootstrap 4 compatible) :contentReference[oaicite:4]{index=4}
+  $(document).ready(function () {
+    $('#filter-input').on('keyup', function () {
+      var val = $(this).val().toLowerCase();
+      $('#farmersTable tbody tr').filter(function () {
+        $(this).toggle($(this).text().toLowerCase().indexOf(val) > -1);
+      });
+    });
+  });
+</script>
+<script>
+  document.getElementById('registerForm').addEventListener('submit', function (e) {
+    const nin = document.getElementById('youth_nin').value.toUpperCase();
+    const validStart = nin.startsWith('CM') || nin.startsWith('CF');
+
+    if (!validStart || nin.length !== 14) {
+      alert("NIN must be 14 characters and start with 'CM' or 'CF'.");
+      e.preventDefault();  // Prevent form from submitting
+    }
+  });
+</script>
+
+{% endblock %}

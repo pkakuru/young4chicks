@@ -1,0 +1,67 @@
+{% extends 'manager/base.html' %}
+{% block title %}Chick Stock{% endblock %}
+{% block content %}
+  <h2>📢 Announcements</h2>
+    <p class="text-muted">Post important updates and view previous announcements made to farmers.</p>
+
+    <div class="row">
+      <!-- Left Column -->
+      <div class="col-md-8">
+        <!-- Add New Announcement -->
+        <div class="card p-3 mb-4">
+          <h5 class="mb-3">➕ Post New Announcement</h5>
+          <form>
+            <div class="form-group">
+              <label for="announcement-text">Message</label>
+              <textarea class="form-control" id="announcement-text" rows="3" placeholder="e.g. Next batch of chicks ready July 15–17..."></textarea>
+            </div>
+            <button class="btn btn-primary mt-2">Post Announcement</button>
+          </form>
+        </div>
+
+        <!-- Recent Announcements List -->
+        <div class="card p-3">
+          <h5 class="mb-3">📜 Recent Announcements</h5>
+          <ul class="list-group">
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+              <span>🐣 Chicks ready for pickup between July 15–17, 2025</span>
+              <button class="btn btn-sm btn-outline-danger">Delete</button>
+            </li>
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+              <span>📅 Training on Urban Brooding: July 20, 2025 at Youth Hall</span>
+              <button class="btn btn-sm btn-outline-danger">Delete</button>
+            </li>
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+              <span>📦 Feed collection starts July 25 — bring your bag receipt</span>
+              <button class="btn btn-sm btn-outline-danger">Delete</button>
+            </li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Right Column: Stats Card -->
+      <div class="col-md-4">
+        <div class="card p-3 mb-4">
+          <h6 class="text-muted mb-3">📊 Announcement Stats</h6>
+          <ul class="list-group list-group-flush">
+            <li class="list-group-item d-flex justify-content-between">
+              <span>Total This Month</span>
+              <strong>7</strong>
+            </li>
+            <li class="list-group-item d-flex justify-content-between">
+              <span>Last Posted</span>
+              <strong>July 12</strong>
+            </li>
+            <li class="list-group-item d-flex justify-content-between">
+              <span>Farmers Reached</span>
+              <strong>152</strong>
+            </li>
+            <li class="list-group-item d-flex justify-content-between">
+              <span>Next Event</span>
+              <strong>July 20</strong>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+{% endblock %}

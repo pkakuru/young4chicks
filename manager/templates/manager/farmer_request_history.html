@@ -1,0 +1,71 @@
+{% extends 'manager/base.html' %}
+{% block title %}Request History - {{ farmer.name }}{% endblock %}
+
+{% block content %}
+<h2 class="mb-1">📄 Request History</h2>
+<p class="text-muted mb-4">View all chick requests submitted by the selected farmer.</p>
+
+<!-- Combined Info & History Card -->
+<div class="card p-4 mb-4">
+  <h5 class="mb-4">👤 Farmer Information</h5>
+  <div class="row mb-4">
+    <div class="col-md-6">
+      <p><strong>Name:</strong> {{ farmer.name }}</p>
+      <p><strong>Age:</strong> {{ farmer.age }}</p>
+      <p><strong>Gender:</strong> {{ farmer.gender }}</p>
+    </div>
+    <div class="col-md-6">
+      <p><strong>NIN:</strong> {{ farmer.nin }}</p>
+      <p><strong>Recommender:</strong> {{ farmer.recommender_name }} {{ farmer.recommender_nin }}</p>
+      <p><strong>Phone:</strong> {{ farmer.contact }}</p>
+    </div>
+  </div>
+
+  <h5 class="mb-3">🐣 Chick Request History</h5>
+  <div class="table-responsive">
+    <table class="table table-sm table-bordered table-hover mb-0">
+      <thead class="thead-light">
+        <tr>
+          <th>#</th>
+          <th>Request ID</th>
+          <th>Date</th>
+          <th>Type</th>
+          <th>Quantity</th>
+          <th>Status</th>
+          <th>Notes</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for req in requests %}
+        <tr>
+          <td>{{ forloop.counter }}</td>
+          <td>{{ req.id }}</td>
+          <td>{{ req.submitted_on|date:"M d, Y" }}</td>
+          <td>{{ req.get_chick_type_display }}</td>
+          <td>{{ req.quantity }}</td>
+          <td>
+            {% if req.status == 'approved' %}
+              <span class="badge badge-success">Approved</span>
+            {% elif req.status == 'rejected' %}
+              <span class="badge badge-danger">Rejected</span>
+            {% else %}
+              <span class="badge badge-warning text-dark">Pending</span>
+            {% endif %}
+          </td>
+          <td>{{ req.notes|default:"-" }}</td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="7" class="text-center text-muted">No requests found for this farmer.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Back Button -->
+<div class="text-center">
+  <a href="{% url 'manager_farmers' %}" class="btn btn-outline-secondary">🔙 Back to Farmers List</a>
+</div>
+{% endblock %}

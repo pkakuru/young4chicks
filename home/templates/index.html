@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Young4ChickS | Urban Poultry Support</title>
+  <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body {
+      background-color: #f8f9fa;
+    }
+    .main-card {
+      border-radius: 15px;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+      background-color: white;
+      padding: 2rem;
+    }
+    .btn-purple {
+      background-color: #6f42c1;
+      color: white;
+    }
+    .btn-purple:hover {
+      background-color: #5a34a3;
+    }
+    .section-title {
+      font-weight: 600;
+      font-size: 1.1rem;
+      margin-bottom: 0.75rem;
+    }
+    .info-section {
+      border-radius: 10px;
+      padding: 1.25rem;
+      margin-bottom: 1.5rem;
+      background-color: #e9ecef;
+    }
+    .gray-card {
+      background-color: #f1f1f1;
+      border: 1px solid #ddd;
+    }
+    .equal-height {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+    }
+  </style>
+</head>
+<body>
+  <div class="container py-5">
+    <div class="main-card">
+
+      <!-- Welcome -->
+      <div class="text-center mb-4">
+        <h1 class="mb-2">Welcome to <strong>Young4ChickS</strong></h1>
+        <p class="lead mb-0">Empowering urban youth through smart poultry farming and timely chick delivery.</p>
+      </div>
+
+      <!-- Check Status & Login (Equal Height) -->
+      <div class="row justify-content-center align-items-stretch mb-4">
+        <!-- Check Request -->
+        <div class="col-md-6 mb-3">
+          <div class="card p-4 h-100 gray-card equal-height">
+            <h5 class="text-center mb-3">🔍 Check Chick Request</h5>
+            <form method="GET" action="#">
+              <div class="form-group">
+                <label for="nin">Your NIN or Request ID</label>
+                <input type="text" class="form-control" id="nin" name="query" required>
+              </div>
+              <button type="submit" class="btn btn-purple btn-block mt-3">Check Status</button>
+            </form>
+          </div>
+        </div>
+
+        <!-- Login -->
+        <div class="col-md-6 mb-3">
+          <div class="card p-4 h-100 gray-card equal-height text-center d-flex flex-column justify-content-center">
+            <h5 class="mb-3">👤 Staff Login</h5>
+            <p class="font-weight-bold">Are you a Brooder Manager or Sales Rep?</p>
+            <a href="#" class="btn btn-outline-secondary mt-2">Login to Dashboard</a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Info Sections (Subtle Gray) -->
+      <div class="row">
+        <div class="col-md-4">
+          <div class="info-section">
+            <div class="section-title">📅 Upcoming Trainings</div>
+            <ul class="list-unstyled">
+              <li class="mb-2"><strong>July 20:</strong> Urban Brooding Basics</li>
+              <li class="mb-2"><strong>July 25:</strong> Feed Awareness Day</li>
+              <li class="mb-2"><strong>Aug 5:</strong> Vaccination & Hygiene</li>
+            </ul>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="info-section">
+            <div class="section-title">🧠 Farmer Tips</div>
+            <ul class="list-unstyled">
+              <li class="mb-2">✅ Keep chicks warm in first 2 weeks</li>
+              <li class="mb-2">✅ Clean feeders & drinkers daily</li>
+              <li class="mb-2">✅ Observe chicks for early illness signs</li>
+            </ul>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="info-section text-center">
+            <div class="section-title">💬 Quote of the Week</div>
+            <blockquote class="blockquote mb-0">
+              <p>“Farming is not just a job — it’s a commitment to the future.”</p>
+              <footer class="blockquote-footer mt-2">Hon. Youth MP</footer>
+            </blockquote>
+          </div>
+        </div>
+      </div>
+
+      <!-- Full-width Announcement (Gray Card) -->
+      <div class="row mt-3">
+        <div class="col-12">
+          <div class="info-section text-center">
+            <div class="section-title">📢 Latest Announcement</div>
+            <p class="mb-2">🐣 Next batch of chicks ready on <strong>July 15, 2025</strong>.</p>
+            <p>Please carry your NIN and Request ID to the pickup center.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Temporary Dashboard Links for Testing -->
+<div class="row mt-4">
+  <div class="col-md-6 text-left">
+    <a href="{% url 'manager_dashboard' %}" class="btn btn-sm btn-outline-primary">🐥 Brooder Dashboard</a>
+  </div>
+  <div class="col-md-6 text-right">
+    <a href="{% url 'sales_dashboard' %}" class="btn btn-sm btn-outline-secondary">📋 Sales Rep Dashboard</a>
+  </div>
+</div>
+
+
+    </div>
+  </div>
+
+  <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

@@ -1,0 +1,47 @@
+{% extends 'sales/base.html' %}
+
+{% block title %}Submit Request | Young4ChickS{% endblock %}
+
+{% block content %}
+<h2>📊 Sales Rep Dashboard</h2>
+    <p class="text-muted">Welcome! You can register farmers, submit chick requests, and manage pickups.</p>
+
+    <!-- Summary Cards -->
+    <div class="row mt-4">
+      <div class="col-md-4">
+        <div class="card text-white bg-primary mb-3">
+          <div class="card-body">
+            <h5 class="card-title">Registered Farmers</h5>
+            <p class="card-text fs-4">182</p>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="card text-white bg-warning mb-3">
+          <div class="card-body">
+            <h5 class="card-title">Pending Requests</h5>
+            <p class="card-text fs-4">8</p>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="card text-white bg-success mb-3">
+          <div class="card-body">
+            <h5 class="card-title">Completed Pickups</h5>
+            <p class="card-text fs-4">104</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="mt-5">
+      <h5 class="mb-3">⚡ Quick Actions</h5>
+      <div class="d-flex flex-wrap gap-3">
+        <a href="#" class="btn btn-outline-primary">➕ Register New Farmer</a>
+        <a href="#" class="btn btn-outline-success">📥 Submit Chick Request</a>
+        <a href="#" class="btn btn-outline-info">🔍 View Farmer Requests</a>
+        <a href="#" class="btn btn-outline-dark">✅ Mark Request as Completed</a>
+      </div>
+    </div>
+{% endblock %}

@@ -1,0 +1,76 @@
+{% extends 'manager/base.html' %}
+{% block title %}Add Feed Stock | Young4ChickS{% endblock %}
+
+{% block content %}
+<h2 class="mb-1">📦 Add Feed Stock</h2>
+<p class="text-muted mb-4">Record newly received feed batches from suppliers and manufacturers.</p>
+
+<!-- Form Card -->
+<div class="card p-4">
+  <form method="post">
+    {% csrf_token %}
+    
+    <div class="row mb-3">
+      <div class="col-md-6">
+        <label><strong>Feed Type</strong></label>
+        <select name="feed_type" class="form-control" required>
+          <option value="">Select feed type...</option>
+          <option value="starter">Starter</option>
+          <option value="grower">Grower</option>
+          <option value="finisher">Finisher</option>
+        </select>
+      </div>
+      <div class="col-md-6">
+        <label><strong>Date Received</strong></label>
+        <input type="date" name="date_received" class="form-control" required>
+      </div>
+    </div>
+
+    <div class="row mb-3">
+      <div class="col-md-6">
+        <label><strong>Manufacturer</strong></label>
+        <select name="manufacturer" class="form-control" required>
+          <option value="">Select manufacturer...</option>
+          {% for m in manufacturers %}
+          <option value="{{ m.id }}">{{ m.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-6">
+        <label><strong>Supplier</strong></label>
+        <select name="supplier" class="form-control" required>
+          <option value="">Select supplier...</option>
+          {% for s in suppliers %}
+          <option value="{{ s.id }}">{{ s.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+
+    <div class="row mb-3">
+      <div class="col-md-6">
+        <label><strong>Quantity (bags)</strong></label>
+        <input type="number" name="quantity_bags" min="1" class="form-control" required>
+      </div>
+      <div class="col-md-3">
+        <label><strong>Purchase Price (UGX)</strong></label>
+        <input type="number" name="purchase_price" min="0" class="form-control" required>
+      </div>
+      <div class="col-md-3">
+        <label><strong>Sale Price (UGX)</strong></label>
+        <input type="number" name="sale_price" min="0" class="form-control" required>
+      </div>
+    </div>
+
+    <div class="form-group mb-3">
+      <label><strong>Notes (Optional)</strong></label>
+      <textarea name="notes" class="form-control" rows="2" placeholder="Any remarks about the batch..."></textarea>
+    </div>
+
+    <div class="d-flex justify-content-between">
+      <button type="submit" class="btn btn-success">➕ Add Feed Stock</button>
+      <a href="{% url 'manage_feeds_sources' %}" class="btn btn-outline-secondary">⚙ Manage Feed Sources</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

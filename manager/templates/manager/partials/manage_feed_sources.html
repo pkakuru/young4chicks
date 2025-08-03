@@ -1,0 +1,108 @@
+
+{% block title %} {% endblock %}
+
+{% block content %}
+<h2 class="mb-1">🏭 Feed Sources Management</h2>
+<p class="text-muted mb-4">Add and manage feed manufacturers and suppliers for accurate stock tracking.</p>
+
+<div class="row">
+
+  <!-- Add Manufacturer Form -->
+  <div class="col-md-6 mb-4">
+    <div class="card p-4 h-100">
+      <h5 class="mb-3">➕ Add Manufacturer</h5>
+      <form method="post" action="{% url 'add_manufacturer' %}">
+        {% csrf_token %}
+        <div class="form-group">
+          <label>Name</label>
+          <input type="text" name="name" class="form-control" placeholder="e.g. Unga Feeds Ltd" required>
+        </div>
+        <div class="form-group">
+          <label>Contact Info</label>
+          <input type="text" name="contact_info" class="form-control" placeholder="Phone, Email, etc.">
+        </div>
+        <button type="submit" class="btn btn-primary mt-2">Add Manufacturer</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Add Supplier Form -->
+  <div class="col-md-6 mb-4">
+    <div class="card p-4 h-100">
+      <h5 class="mb-3">➕ Add Supplier</h5>
+      <form method="post" action="{% url 'add_supplier' %}">
+        {% csrf_token %}
+        <div class="form-group">
+          <label>Name</label>
+          <input type="text" name="name" class="form-control" placeholder="e.g. Kiboga Farm Supplies" required>
+        </div>
+        <div class="form-group">
+          <label>Contact Info</label>
+          <input type="text" name="contact_info" class="form-control" placeholder="Phone, Email, etc.">
+        </div>
+        <button type="submit" class="btn btn-primary mt-2">Add Supplier</button>
+      </form>
+    </div>
+  </div>
+
+</div>
+
+<!-- Existing Manufacturers -->
+<div class="card p-4 mb-4">
+  <h5 class="mb-3">🏭 Registered Manufacturers</h5>
+  <div class="table-responsive">
+    <table class="table table-sm table-bordered">
+      <thead class="thead-light">
+        <tr>
+          <th>#</th>
+          <th>Name</th>
+          <th>Contact Info</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for m in manufacturers %}
+        <tr>
+          <td>{{ forloop.counter }}</td>
+          <td>{{ m.name }}</td>
+          <td>{{ m.contact_info }}</td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="3" class="text-center text-muted">No manufacturers registered yet.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Existing Suppliers -->
+<div class="card p-4 mb-4">
+  <h5 class="mb-3">🚚 Registered Suppliers</h5>
+  <div class="table-responsive">
+    <table class="table table-sm table-bordered">
+      <thead class="thead-light">
+        <tr>
+          <th>#</th>
+          <th>Name</th>
+          <th>Contact Info</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for s in suppliers %}
+        <tr>
+          <td>{{ forloop.counter }}</td>
+          <td>{{ s.name }}</td>
+          <td>{{ s.contact_info }}</td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="3" class="text-center text-muted">No suppliers registered yet.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% endblock %}

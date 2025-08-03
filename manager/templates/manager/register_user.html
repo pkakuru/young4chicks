@@ -1,0 +1,80 @@
+{% extends 'manager/base.html' %}
+{% block title %}Feeds Management{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <!-- Card wrapper for form -->
+            <div class="card shadow-sm mt-4 mb-5">
+                <div class="card-body">
+                    <h4 class="card-title text-center mb-4">👤 Register New System User</h4>
+
+                    {% if messages %}
+                    <div class="mb-3">
+                        {% for message in messages %}
+                        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                            {{ message }}
+                            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                                <span aria-hidden="true">&times;</span>
+                            </button>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+
+
+                    <form method="post" action="{% url 'manager_user' %}">
+                        {% csrf_token %}
+                        <div class="form-group mb-3">
+                            <label for="id_full_name">Full Name</label>
+                            <input type="text" id="id_full_name" name="full_name" class="form-control"
+                                placeholder="e.g. Peter Kakuru" required>
+                        </div>
+
+                        <div class="form-group mb-3">
+                            <label for="id_dob">Date of Birth</label>
+                            <input type="date" id="id_dob" name="dob" class="form-control" required>
+                        </div>
+
+                        <div class="form-group mb-3">
+                            <label for="id_email">Email Address</label>
+                            <input type="email" id="id_email" name="email" class="form-control"
+                                placeholder="example@domain.com" required>
+                        </div>
+
+                        <div class="form-group mb-3">
+                            <label for="id_phone">Phone Number</label>
+                            <input type="text" id="id_phone" name="phone" class="form-control"
+                                placeholder="e.g. 0789123456" required>
+                        </div>
+
+                        <div class="form-group mb-3">
+                            <label for="id_username">Username</label>
+                            <input type="text" id="id_username" name="username" class="form-control"
+                                placeholder="For login access" required>
+                        </div>
+
+                        <div class="form-group mb-3">
+                            <label for="id_password">Temporary Password</label>
+                            <input type="password" id="id_password" name="password" class="form-control"
+                                placeholder="e.g. 1234abcd" required>
+                        </div>
+
+                        <div class="form-group mb-4">
+                            <label for="id_role">Role</label>
+                            <select id="id_role" name="role" class="form-control" required>
+                                <option disabled selected>-- Select Role --</option>
+                                <option value="brooder_manager">Brooder Manager</option>
+                                <option value="sales_rep">Sales Representative</option>
+                            </select>
+                        </div>
+
+                        <button type="submit" class="btn btn-secondary btn-block">Register User</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

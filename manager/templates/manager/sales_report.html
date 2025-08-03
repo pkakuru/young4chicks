@@ -1,0 +1,95 @@
+{% extends 'manager/base.html' %}
+{% block title %}Sales Report{% endblock %}
+{% block content %}
+<h2 class="mb-1">📈 Sales Report</h2>
+<p class="text-muted mb-4">View detailed statistics of chick sales and revenue performance.</p>
+
+<!-- Summary Cards -->
+<div class="row mb-4">
+  <div class="col-md-4">
+    <div class="card-summary border-left-primary">
+      <h6>Total Chicks Sold</h6>
+      <h3>1,820</h3>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card-summary border-left-success">
+      <h6>Total Revenue (UGX)</h6>
+      <h3>UGX 2,853,000</h3>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card-summary border-left-warning">
+      <h6>Chicks Sold This Week</h6>
+      <h3>460</h3>
+    </div>
+  </div>
+</div>
+
+<!-- Chart Placeholder -->
+<div class="card p-4 mb-4">
+  <h5 class="mb-3">📊 Sales Trends</h5>
+  <div style="height: 300px; background-color: #f1f1f1; display: flex; align-items: center; justify-content: center;">
+    <em>Chart coming soon...</em>
+  </div>
+</div>
+
+<!-- Filters -->
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <!-- Chick Type Dropdown -->
+  <div class="form-group mb-0">
+    <label for="chickType">Filter by Chick Type:</label>
+    <select id="chickType" class="form-control">
+      <option selected>All</option>
+      <option>Broiler</option>
+      <option>Layer</option>
+      <option>Local</option>
+    </select>
+  </div>
+
+  <!-- Time Filters -->
+  <div class="btn-group">
+    <button class="btn btn-outline-secondary active">This Week</button>
+    <button class="btn btn-outline-secondary">This Month</button>
+    <button class="btn btn-outline-secondary">All Time</button>
+  </div>
+</div>
+
+<!-- Sales Table -->
+<div class="card p-4">
+  <h5 class="mb-3">💰 Detailed Sales Records</h5>
+  <div class="table-responsive">
+    <table class="table table-sm table-bordered table-hover">
+      <thead class="thead-light">
+        <tr>
+          <th>Sale ID</th>
+          <th>Date</th>
+          <th>Farmer</th>
+          <th>Chick Type</th>
+          <th>Quantity</th>
+          <th>Amount (UGX)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>#S1034</td>
+          <td>Jul 23, 2025</td>
+          <td>Jane Atwine</td>
+          <td>Broiler</td>
+          <td>100</td>
+          <td>UGX 165,000</td>
+        </tr>
+        <tr>
+          <td>#S1033</td>
+          <td>Jul 20, 2025</td>
+          <td>Kato Yusuf</td>
+          <td>Layer</td>
+          <td>200</td>
+          <td>UGX 330,000</td>
+        </tr>
+        <!-- More rows -->
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

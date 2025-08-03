@@ -1,0 +1,109 @@
+{% extends 'sales/base.html' %}
+
+{% block title %}Submit Chick Request | Young4ChickS{% endblock %}
+
+{% block content %}
+<h2 class="mb-1">🐣 Submit Chick Request</h2>
+<p class="text-muted mb-4">Fill the form below to submit a new chick request for a registered farmer.</p>
+
+{% if messages %}
+  {% for message in messages %}
+    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+      {{ message }}
+      <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+        <span aria-hidden="true">&times;</span>
+      </button>
+    </div>
+  {% endfor %}
+{% endif %}
+
+<!-- Request Form Card -->
+<div class="card shadow-sm p-4 mb-5">
+  <h5 class="mb-3">📝 Chick Request Form</h5>
+  <form method="post">
+    {% csrf_token %}
+    
+    <div class="form-row">
+      <div class="form-group col-md-6">
+        <label for="farmer">Select Farmer</label>
+        <select name="farmer" class="form-control" required>
+          <option selected disabled>-- Choose Farmer --</option>
+          {% for farmer in farmers %}
+            <option value="{{ farmer.id }}">{{ farmer.name }} - {{ farmer.nin }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="form-group col-md-6">
+        <label for="chick_type">Chick Type</label>
+        <select name="chick_type" class="form-control" required>
+          <option selected disabled>-- Choose Chick Type --</option>
+          <option value="layer_local">Layer - Local</option>
+          <option value="layer_exotic">Layer - Exotic</option>
+          <option value="broiler_local">Broiler - Local</option>
+          <option value="broiler_exotic">Broiler - Exotic</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group col-md-6">
+        <label for="quantity">Quantity</label>
+        <input type="number" name="quantity" class="form-control" min="1" placeholder="e.g. 100" required>
+      </div>
+
+      <div class="form-group col-md-6">
+        <label for="notes">Notes (optional)</label>
+        <textarea name="notes" class="form-control" rows="2" placeholder="e.g. Needed urgently, vaccinated batch preferred."></textarea>
+      </div>
+    </div>
+
+    <button type="submit" class="btn btn-success">📤 Submit Request</button>
+  </form>
+</div>
+
+<!-- Request History Table -->
+<div class="card shadow-sm p-4 mb-5">
+  <h5 class="mb-3">📋 Submitted Chick Requests</h5>
+  <div class="table-responsive">
+    <table class="table table-sm table-bordered table-hover mb-0">
+      <thead class="thead-light">
+        <tr>
+          <th>#</th>
+          <th>Farmer</th>
+          <th>Chick Type</th>
+          <th>Quantity</th>
+          <th>Status</th>
+          <th>Submitted On</th>
+          <th>Notes</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for request in all_requests %}
+        <tr>
+          <td>{{ forloop.counter }}</td>
+          <td>{{ request.farmer.name }}</td>
+          <td>{{ request.chick_type|cut:"_"|title }}</td>
+          <td>{{ request.quantity }}</td>
+          <td>
+            {% if request.status == 'approved' %}
+              <span class="badge badge-success">Approved</span>
+            {% elif request.status == 'pending' %}
+              <span class="badge badge-warning text-dark">Pending</span>
+            {% else %}
+              <span class="badge badge-danger">Rejected</span>
+            {% endif %}
+          </td>
+          <td>{{ request.submitted_on }}</td>
+          <td>{{ request.notes|default:"-" }}</td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="7" class="text-center text-muted">No requests submitted yet.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
