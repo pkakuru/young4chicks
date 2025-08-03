@@ -327,23 +327,48 @@ def add_feed_stock(request):
 
 def add_manufacturer(request):
     if request.method == 'POST':
-        name = request.POST.get('name').strip()
-        contact = request.POST.get('contact').strip()
+        name = (request.POST.get('name') or '').strip()
+        contact = (request.POST.get('contact') or '').strip()
+        location = (request.POST.get('location') or '').strip()
         if name:
-            Manufacturer.objects.create(name=name, contact=contact)
+            Manufacturer.objects.create(
+                name=name,
+                contact=contact,
+                location=location,
+                )
             messages.success(request, f"Manufacturer '{name}' added successfully.")
     return redirect('manager_feeds')  # or wherever your main feeds page view is named
 
 def add_supplier(request):
     if request.method == 'POST':
-        name = request.POST.get('name').strip()
-        contact = request.POST.get('contact').strip()
+        name = (request.POST.get('name') or '').strip()
+        contact_person = (request.POST.get('contact_person') or '').strip()
+        phone_number = (request.POST.get('phone_number') or '').strip()
+        location = (request.POST.get('location') or '').strip()
         if name:
-            Supplier.objects.create(name=name, contact=contact)
+            Supplier.objects.create(
+                name=name,
+                contact_person=contact_person,
+                phone_number=phone_number,
+                location=location,
+                )
             messages.success(request, f"Supplier '{name}' added successfully.")
     return redirect('manager_feeds')
 
-from sales.models import Farmer, FeedStock
+
+
+def delete_manufacturer(request, pk):
+    manufacturer = get_object_or_404(Manufacturer, pk=pk)
+    manufacturer.delete()
+    messages.success(request, f"Manufacturer '{manufacturer.name}' deleted successfully.")
+    return redirect('manager_feeds')
+
+def delete_supplier(request, pk):
+    supplier = get_object_or_404(Supplier, pk=pk)
+    supplier.delete()
+    messages.success(request, f"Supplier '{supplier.name}' deleted successfully.")
+    return redirect('manager_feeds')
+
 
 def distribute_feeds(request):
     farmers = Farmer.objects.all().order_by('name')

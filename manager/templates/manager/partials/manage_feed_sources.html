@@ -1,4 +1,3 @@
-
 {% block title %} {% endblock %}
 
 {% block content %}
@@ -18,11 +17,16 @@
           <input type="text" name="name" class="form-control" placeholder="e.g. Unga Feeds Ltd" required>
         </div>
         <div class="form-group">
-          <label>Contact Info</label>
-          <input type="text" name="contact_info" class="form-control" placeholder="Phone, Email, etc.">
+          <label>Contact Person</label>
+          <input type="text" name="contact" class="form-control" placeholder="e.g. John Doe">
+        </div>
+        <div class="form-group">
+          <label>Location</label>
+          <input type="text" name="location" class="form-control" placeholder="e.g. Industrial Area, Kampala">
         </div>
         <button type="submit" class="btn btn-primary mt-2">Add Manufacturer</button>
       </form>
+
     </div>
   </div>
 
@@ -37,72 +41,106 @@
           <input type="text" name="name" class="form-control" placeholder="e.g. Kiboga Farm Supplies" required>
         </div>
         <div class="form-group">
-          <label>Contact Info</label>
-          <input type="text" name="contact_info" class="form-control" placeholder="Phone, Email, etc.">
+          <label>Contact Person</label>
+          <input type="text" name="contact_person" class="form-control" placeholder="e.g. Jane Nakanwagi">
+        </div>
+        <div class="form-group">
+          <label>Phone Number</label>
+          <input type="text" name="phone_number" class="form-control" placeholder="e.g. +256 700 123456">
+        </div>
+        <div class="form-group">
+          <label>Location</label>
+          <input type="text" name="location" class="form-control" placeholder="e.g. Busega Trading Centre">
         </div>
         <button type="submit" class="btn btn-primary mt-2">Add Supplier</button>
       </form>
+
     </div>
   </div>
 
 </div>
 
-<!-- Existing Manufacturers -->
-<div class="card p-4 mb-4">
-  <h5 class="mb-3">🏭 Registered Manufacturers</h5>
-  <div class="table-responsive">
-    <table class="table table-sm table-bordered">
-      <thead class="thead-light">
-        <tr>
-          <th>#</th>
-          <th>Name</th>
-          <th>Contact Info</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for m in manufacturers %}
-        <tr>
-          <td>{{ forloop.counter }}</td>
-          <td>{{ m.name }}</td>
-          <td>{{ m.contact_info }}</td>
-        </tr>
-        {% empty %}
-        <tr>
-          <td colspan="3" class="text-center text-muted">No manufacturers registered yet.</td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
+<!-- Existing Manufacturers and Suppliers Side by Side -->
+<div class="row">
+
+  <!-- Registered Manufacturers -->
+  <div class="col-md-6 mb-4">
+    <div class="card p-4 h-100">
+      <h5 class="mb-3">🏭 Registered Manufacturers</h5>
+      <div class="table-responsive">
+        <table class="table table-sm table-bordered">
+          <thead class="thead-light">
+            <tr>
+              <th>#</th>
+              <th>Name</th>
+              <th>Contact Person</th>
+              <th>Location</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for m in manufacturers %}
+            <tr>
+              <td>{{ forloop.counter }}</td>
+              <td>{{ m.name }}</td>
+              <td>{{ m.contact }}</td>
+              <td>{{ m.location }}</td>
+              <td>
+                <a href="{% url 'delete_manufacturer' m.id %}" class="btn btn-sm btn-danger" onclick="return confirm('Are you sure you want to delete this manufacturer?');">Delete</a>
+              </td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="5" class="text-center text-muted">No manufacturers registered yet.</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
   </div>
+
+  <!-- Registered Suppliers -->
+  <div class="col-md-6 mb-4">
+    <div class="card p-4 h-100">
+      <h5 class="mb-3">🚚 Registered Suppliers</h5>
+      <div class="table-responsive">
+        <table class="table table-sm table-bordered">
+          <thead class="thead-light">
+            <tr>
+              <th>#</th>
+              <th>Name</th>
+              <th>Contact Person</th>
+              <th>Phone</th>
+              <th>Location</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for s in suppliers %}
+            <tr>
+              <td>{{ forloop.counter }}</td>
+              <td>{{ s.name }}</td>
+              <td>{{ s.contact_person }}</td>
+              <td>{{ s.phone_number }}</td>
+              <td>{{ s.location }}</td>
+              <td>
+                <a href="{% url 'delete_supplier' s.id %}" class="btn btn-sm btn-danger" onclick="return confirm('Are you sure you want to delete this supplier?');">Delete</a>
+              </td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="6" class="text-center text-muted">No suppliers registered yet.</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
 </div>
 
-<!-- Existing Suppliers -->
-<div class="card p-4 mb-4">
-  <h5 class="mb-3">🚚 Registered Suppliers</h5>
-  <div class="table-responsive">
-    <table class="table table-sm table-bordered">
-      <thead class="thead-light">
-        <tr>
-          <th>#</th>
-          <th>Name</th>
-          <th>Contact Info</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for s in suppliers %}
-        <tr>
-          <td>{{ forloop.counter }}</td>
-          <td>{{ s.name }}</td>
-          <td>{{ s.contact_info }}</td>
-        </tr>
-        {% empty %}
-        <tr>
-          <td colspan="3" class="text-center text-muted">No suppliers registered yet.</td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  </div>
-</div>
+
 
 {% endblock %}
