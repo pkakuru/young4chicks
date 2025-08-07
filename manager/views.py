@@ -1,16 +1,18 @@
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from home.models import User
 from django.contrib import messages
 from manager.models import ChickStock
 from django.core.paginator import Paginator
 from sales.models import ChickRequest, Farmer, Manufacturer, Supplier, FeedStock
 from datetime import date, timedelta
-from django.shortcuts import get_object_or_404
 from django.db.models import Sum
 from collections import defaultdict
 from django.views.decorators.http import require_POST
 from django.contrib.auth.decorators import login_required
 from datetime import datetime
+from sales.models import FeedRequest, FeedDistribution
+from django.utils.timezone import now
+from django.db.models import Q
 
 
 # Create your views here.
@@ -40,6 +42,18 @@ def dashboard_view(request):
     # This months approvals
     approved_this_month = approved_requests.filter(approval_date__gte=month_start).count()
 
+    # Feed Summaries
+    total_feed_stock = FeedStock.objects.aggregate(total=Sum('quantity_bags'))['total'] or 0
+
+    # Feeds expiring in next 14 days
+    soon_expiring_feeds = FeedStock.objects.filter(expiry_date__isnull=False, expiry_date__lte=today + timedelta(days=14)).count()
+
+    # Feed distributions due for payment soon (e.g Within 7 days)
+    feeds_due_soon = FeedDistribution.objects.filter(
+        due_date__isnull=False,
+        due_date__lte=today + timedelta(days=7)
+    ).count()
+
     # STOCK STATS
     stock_by_type = ChickStock.objects.values('chick_type').annotate(total=Sum('quantity'))
     stock_dict = {entry['chick_type']: entry['total'] for entry in stock_by_type}
@@ -61,6 +75,9 @@ def dashboard_view(request):
         'approved_this_month': approved_this_month,
         'stock_dict': stock_dict,
         'total_remaining_stock': total_remaining_stock,
+        'feeds_due_soon': feeds_due_soon,
+        'soon_expiring_feeds': soon_expiring_feeds,
+        'total_feed_stock': total_feed_stock,
     }
     return render(request, 'manager/dashboard.html', context)
 
@@ -158,19 +175,19 @@ def approve_reject_request(request, request_id):
                 return redirect('review_chick_requests')
             
             # Deduct from oldest stock records first (FIFO)
-            remaining = requested_qty
-            stock_entries = ChickStock.objects.filter(chick_type=requested_type, quantity__gt=0).order_by('recorded_on')
+            # remaining = requested_qty
+            # stock_entries = ChickStock.objects.filter(chick_type=requested_type, quantity__gt=0).order_by('recorded_on')
 
-            for stock in stock_entries:
-                if remaining == 0:
-                    break
-                if stock.quantity <= remaining:
-                    remaining -= stock.quantity
-                    stock.quantity = 0
-                else:
-                    stock.quantity -= remaining
-                    remaining = 0
-                stock.save()
+            # for stock in stock_entries:
+            #     if remaining == 0:
+            #         break
+            #     if stock.quantity <= remaining:
+            #         remaining -= stock.quantity
+            #         stock.quantity = 0
+            #     else:
+            #         stock.quantity -= remaining
+            #         remaining = 0
+            #     stock.save()
 
             # Now approve the request    
             chick_request.status = 'approved'
@@ -191,10 +208,44 @@ def approve_reject_request(request, request_id):
 def feeds_view(request):
     manufacturers = Manufacturer.objects.all()
     suppliers = Supplier.objects.all()
-    return render(request, 'manager/feeds.html', {
+    feed_stocks = FeedStock.objects.all().order_by('-arrival_date')
+    distributions = FeedDistribution.objects.select_related('farmer', 'feed_stock', 'recorded_by')
+
+    query = request.GET.get('q')
+    distributions = FeedDistribution.objects.select_related('farmer', 'feed_stock', 'recorded_by')
+
+    if query:
+        distributions = distributions.filter(
+            Q(farmer__name__icontains=query) |
+            Q(feed_stock__feed_type__icontains=query)
+        )
+    
+    context = {
+        'feed_stocks': feed_stocks,
         'manufacturers': manufacturers,
         'suppliers': suppliers,
-    })
+        'distributions': distributions,
+    }
+    
+    return render(request, 'manager/feeds.html', context)
+
+# from sales.models import FeedDistribution
+# from django.db.models import Q
+
+# def distribute_feeds_view(request):
+#     query = request.GET.get('q')
+#     feed_distributions = FeedDistribution.objects.select_related('farmer', 'feed_stock', 'recorded_by')
+
+#     if query:
+#         feed_distributions = feed_distributions.filter(
+#             Q(farmer__name__icontains=query) |
+#             Q(feed_stock__feed_type__icontains=query)
+#         )
+
+#     return render(request, 'manager/partials/distribute_feeds.html', {
+#         'distributions': feed_distributions
+#     })
+
 
 
 def farmers_view(request):
@@ -280,7 +331,7 @@ def manage_feed_sources(request):
     })
 
 # View to handle displaying the form and saving feed_stock on post
-@login_required
+#@login_required
 def add_feed_stock(request):
     manufacturers = Manufacturer.objects.all()
     suppliers = Supplier.objects.all()
@@ -292,11 +343,12 @@ def add_feed_stock(request):
         quantity_bags = request.POST.get('quantity_bags')
         purchase_price = request.POST.get('purchase_price')
         sale_price = request.POST.get('sale_price')
-        date_received = request.POST.get('date_received')
+        arrival_date = request.POST.get('arrival_date')
+        expiry_date = request.POST.get('expiry_date')
         notes = request.POST.get('notes', '')
 
         # Validation check
-        if not all([feed_type, manufacturer_id, supplier_id, quantity_bags, purchase_price, sale_price, date_received]):
+        if not all([feed_type, manufacturer_id, supplier_id, quantity_bags, purchase_price, sale_price, arrival_date]):
             messages.error(request, "Please fill in all required fields.")
             return redirect('add_feed_stock')
 
@@ -311,18 +363,15 @@ def add_feed_stock(request):
             quantity_bags = quantity_bags,
             purchase_price = purchase_price,
             sale_price = sale_price,
-            date_received = date_received,
-            notes = notes,
-            added_by = request.user
+            arrival_date = arrival_date,
+            expiry_date = expiry_date,
+            notes = notes,            
         )
 
         messages.success(request, f"{quantity_bags} bags of {feed_type} feed added to stock successfully.")
-        return redirect('add_feed_stock')
+        return redirect('manager_feeds')
 
-    return render(request, 'manager/add_feed_stock.html', {
-        'manufacturers': manufacturers,
-        'suppliers': suppliers,
-    })
+    return redirect('manager_feeds')
 
 
 def add_manufacturer(request):
@@ -371,21 +420,109 @@ def delete_supplier(request, pk):
 
 
 def distribute_feeds(request):
-    farmers = Farmer.objects.all().order_by('name')
-    available_feed_stock = FeedStock.objects.filter(quantity_bags__gt=0)
+    query = request.GET.get('q')
+    feed_distributions = FeedDistribution.objects.select_related('farmer', 'feed_stock', 'recorded_by')
 
-    return render(request, 'manager/distribute_feeds.html', {
-        'farmers': farmers,
-        'feed_stock': available_feed_stock
+    if query:
+        feed_distributions = feed_distributions.filter(
+            Q(farmer__name__icontains=query) |
+            Q(feed_stock__feed_type__icontains=query)
+        )
+
+    return render(request, 'manager/partials/distribute_feeds.html', {
+        'distributions': feed_distributions
     })
 
-from sales.models import FeedStock
 
+
+
+
+@login_required
 def feed_stock_history(request):
-    all_feed_stock = FeedStock.objects.all().order_by('-received_date')
-
-    return render(request, 'manager/feed_stock_history.html', {
-        'feed_stock': all_feed_stock
+    feed_stocks = FeedStock.objects.select_related('manufacturer', 'supplier').order_by('-arrival_date')
+    return render(request, 'manager/partials/feed_history.html', {
+        'feed_stocks': feed_stocks,
     })
 
 
+from sales.models import FeedStock  # Add this at the top if not already imported
+
+#@login_required
+def feeds_view(request):
+    manufacturers = Manufacturer.objects.all()
+    suppliers = Supplier.objects.all()
+    feed_stocks = FeedStock.objects.select_related('manufacturer', 'supplier').order_by('-arrival_date')
+
+    return render(request, 'manager/feeds.html', {
+        'manufacturers': manufacturers,
+        'suppliers': suppliers,
+        'feed_stocks': feed_stocks,  # this is the key addition
+    })
+
+@login_required
+def review_feed_requests(request):
+    pending_requests = FeedRequest.objects.filter(status='pending').select_related('farmer')
+    approved_requests = FeedRequest.objects.filter(status='approved').select_related('farmer')
+    rejected_requests = FeedRequest.objects.filter(status='rejected').select_related('farmer')
+
+    return render(request, 'manager/review_feed_requests.html', {
+        'pending_requests': pending_requests,
+        'approved_requests': approved_requests,
+        'rejected_requests': rejected_requests,
+    })
+
+from django.shortcuts import render
+from sales.models import FeedRequest
+
+#@login_required  # Uncomment this when login is fully implemented
+def review_feed_requests(request):
+    pending_requests = FeedRequest.objects.filter(status='pending')
+    approved_requests = FeedRequest.objects.filter(status='approved')
+    all_requests = FeedRequest.objects.all().order_by('-submitted_on')
+
+    context = {
+        'pending_requests': pending_requests,
+        'approved_requests': approved_requests,
+        'all_requests': all_requests,
+    }
+    return render(request, 'manager/review_feed_requests.html', context)
+
+
+from django.shortcuts import get_object_or_404, redirect
+from django.contrib import messages
+from django.utils.timezone import now
+from sales.models import FeedRequest
+from home.models import User  # For bypassing login
+
+#@login_required
+def approve_reject_feed_request(request, request_id):
+    feed_request = get_object_or_404(FeedRequest, id=request_id)
+
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        notes = request.POST.get('approval_notes', '').strip()
+
+        # Bypass login by using default user
+        # Delete these 3 lines and uncomment request.user when login is implemented
+        default_user = User.objects.get(username='peter')  
+        approving_user = default_user
+        #approving_user = request.user
+
+        if action == 'approve':
+            feed_request.status = 'approved'
+            feed_request.approval_notes = notes
+            feed_request.approved_by = approving_user
+            feed_request.approved_on = now()
+            feed_request.save()
+            messages.success(request, f"Feed request #{feed_request.id} approved successfully.")
+        elif action == 'reject':
+            feed_request.status = 'rejected'
+            feed_request.approval_notes = notes
+            feed_request.approved_by = approving_user
+            feed_request.approved_on = now()
+            feed_request.save()
+            messages.warning(request, f"Feed request #{feed_request.id} rejected.")
+        else:
+            messages.error(request, "Invalid action.")
+
+    return redirect('review_feed_requests')

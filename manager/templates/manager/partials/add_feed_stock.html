@@ -1,46 +1,57 @@
-{% block title %} {% endblock %}
+
+{% block title %}Add Feed Stock | Young4ChickS{% endblock %}
 
 {% block content %}
-<h2 class="mb-1">➕ Add Feed Stock</h2>
-<p class="text-muted mb-4">Record new feed stock arriving at the farm. Select feed type, quantity, cost, and supplier details.</p>
+<h2 class="mb-1">📦 Add Feed Stock</h2>
+{% if messages %}
+  <div class="mb-3">
+    {% for message in messages %}
+      <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+        {{ message }}
+        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+    {% endfor %}
+  </div>
+{% endif %}
+<p class="text-muted mb-4">Record newly received feed batches from suppliers and manufacturers.</p>
 
+<!-- Form Card -->
 <div class="card p-4">
-  <form method="POST">
+  <form method="post" action="{% url 'add_feed_stock' %}">
     {% csrf_token %}
+    
     <div class="row mb-3">
-      <div class="col-md-4">
-        <label for="feed_type"><strong>Feed Type</strong></label>
-        <select class="form-control" name="feed_type" required>
-          <option value="">Select feed type</option>
+      <div class="col-md-6">
+        <label><strong>Feed Type</strong></label>
+        <select name="feed_type" class="form-control" required>
+          <option value="">Select feed type...</option>
           <option value="starter">Starter</option>
           <option value="grower">Grower</option>
           <option value="finisher">Finisher</option>
         </select>
       </div>
-      <div class="col-md-4">
-        <label for="quantity_bags"><strong>Quantity (Bags)</strong></label>
-        <input type="number" class="form-control" name="quantity_bags" placeholder="e.g. 20" required>
-      </div>
-      <div class="col-md-4">
-        <label for="unit_cost"><strong>Unit Cost (UGX)</strong></label>
-        <input type="number" class="form-control" name="unit_cost" placeholder="e.g. 100000" required>
+      <div class="col-md-6">
+        <label><strong>Quantity (bags)</strong></label>
+        <input type="number" name="quantity_bags" min="1" class="form-control" required>
       </div>
     </div>
 
     <div class="row mb-3">
       <div class="col-md-6">
-        <label for="manufacturer"><strong>Manufacturer</strong></label>
-        <select class="form-control" name="manufacturer_id" required>
-          <option value="">Select manufacturer</option>
+        <label><strong>Manufacturer</strong></label>
+        <select name="manufacturer" class="form-control" required>
+          <option value="">Select manufacturer...</option>
           {% for m in manufacturers %}
           <option value="{{ m.id }}">{{ m.name }}</option>
           {% endfor %}
         </select>
       </div>
       <div class="col-md-6">
-        <label for="supplier"><strong>Supplier</strong></label>
-        <select class="form-control" name="supplier_id" required>
-          <option value="">Select supplier</option>
+        <label><strong>Supplier</strong></label>
+        <select name="supplier" class="form-control" required>
+          <option value="">Select supplier...</option>
           {% for s in suppliers %}
           <option value="{{ s.id }}">{{ s.name }}</option>
           {% endfor %}
@@ -48,13 +59,36 @@
       </div>
     </div>
 
-    <div class="form-group mb-3">
-      <label for="notes"><strong>Notes (Optional)</strong></label>
-      <textarea class="form-control" name="notes" rows="2" placeholder="E.g. Delivered in good condition. Truck delay by 1 hour."></textarea>
+    <div class="row mb-3">
+      <div class="col-md-4">
+        <label><strong>Purchase Price (UGX) - per bag</strong></label>
+        <input type="number" name="purchase_price" min="0" step="0.01" class="form-control" required>
+      </div>
+      <div class="col-md-4">
+        <label><strong>Sale Price (UGX) - per bag</strong></label>
+        <input type="number" name="sale_price" min="0" step="0.01" class="form-control" required>
+      </div>
+      <div class="col-md-4">
+        <label><strong>Date Received</strong></label>
+        <input type="date" name="arrival_date" class="form-control" required>
+      </div>
     </div>
 
-    <button type="submit" class="btn btn-success">✅ Add Feed Stock</button>
-    <a href="{% url 'manager_feeds' %}" class="btn btn-outline-secondary ml-2">🔙 Back to Feeds Dashboard</a>
+    <div class="row mb-3">
+      <div class="col-md-6">
+        <label><strong>Expiry Date</strong> (Optional)</label>
+        <input type="date" name="expiry_date" class="form-control">
+      </div>
+      <div class="col-md-6">
+        <label><strong>Notes (Optional)</strong></label>
+        <textarea name="notes" class="form-control" rows="2" placeholder="Any remarks about the batch..."></textarea>
+      </div>
+    </div>
+
+    <div class="d-flex justify-content-between">
+      <button type="submit" class="btn btn-success">➕ Add Feed Stock</button>
+      <a href="{% url 'manager_feeds' %}" class="btn btn-outline-secondary">⚙ Manage Feed Sources</a>
+    </div>
   </form>
 </div>
 {% endblock %}

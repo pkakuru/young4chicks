@@ -104,6 +104,7 @@
       <a href="{% url 'review_chick_requests' %}" class="{% if request.resolver_match.url_name == 'review_chick_requests' %}active{% endif %}">📥 Chick Requests</a>
       <a href="{% url 'manager_farmers' %}" class="{% if request.resolver_match.url_name == 'manager_farmers' %}active{% endif %}">👤 Farmers</a>
       <a href="{% url 'manager_feeds' %}" class="{% if request.resolver_match.url_name == 'manager_feeds' %}active{% endif %}">🧾 Feeds Reports</a>
+      <a href="{% url 'review_feed_request' %}" class="{% if request.resolver_match.url_name == 'review_feed_request' %}active{% endif %}">🧾 Feeds Requests</a>
       <a href="{% url 'manager_reports' %}" class="{% if request.resolver_match.url_name == 'manager_sales' %}active{% endif %}">🧾 Sales Reports</a>
       <a href="{% url 'manager_user' %}" class="{% if request.resolver_match.url_name == 'manager_user' %}active{% endif %}">🧾 Manage Users</a>
       <a href="{% url 'manager_announcements' %}" class="{% if request.resolver_match.url_name == 'manager_announcements' %}active{% endif %}">📢 Announcements</a>

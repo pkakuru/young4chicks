@@ -1,0 +1,209 @@
+{% extends 'manager/base.html' %}
+{% block title %}Review Feed Requests{% endblock %}
+
+{% block content %}
+<h2>🌽 Feed Requests</h2>
+<p class="text-muted">Review pending feed requests and track feed allocation history.</p>
+
+<!-- Tabs Navigation -->
+<ul class="nav nav-tabs mb-3" role="tablist">
+    <li class="nav-item">
+        <a class="nav-link active" data-toggle="tab" href="#pending" role="tab">⏳ Pending Requests</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link" data-toggle="tab" href="#approved" role="tab">✅ Approved / Picked</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link" data-toggle="tab" href="#history" role="tab">📜 All History</a>
+    </li>
+</ul>
+
+<!-- Flash Messages -->
+{% if messages %}
+{% for message in messages %}
+<div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+    {{ message }}
+    <button type="button" class="close" data-dismiss="alert">&times;</button>
+</div>
+{% endfor %}
+{% endif %}
+
+<div class="tab-content">
+
+    <!-- Pending Requests Tab -->
+    <div class="tab-pane fade show active" id="pending" role="tabpanel">
+        <div class="card p-3 mb-4">
+            <h5>⏳ Pending Feed Requests</h5>
+            <div class="table-responsive mt-3">
+                <table class="table table-bordered table-sm table-hover">
+                    <thead class="thead-light">
+                        <tr>
+                            <th>Request ID</th>
+                            <th>Farmer</th>
+                            <th>Feed Type</th>
+                            <th>Qty (Bags)</th>
+                            <th>Submitted</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for request in pending_requests %}
+                        <tr>
+                            <td>#FR{{ request.id }}</td>
+                            <td>{{ request.farmer.name }}</td>
+                            <td>{{ request.feed_type|title }}</td>
+                            <td>{{ request.quantity_bags }}</td>
+                            <td>{{ request.submitted_on|date:"M d, Y" }}</td>
+                            <td>
+                                <!-- Approve Button -->
+                                <button class="btn btn-sm btn-success" data-toggle="modal"
+                                    data-target="#approveModal{{ request.id }}">Approve</button>
+
+                                <!-- Reject Button -->
+                                <form method="post" action="{% url 'approve_reject_feed_request' request.id %}"
+                                    style="display:inline-block;">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="action" value="reject">
+                                    <button type="submit" class="btn btn-sm btn-outline-danger">Reject</button>
+                                </form>
+                            </td>
+                        </tr>
+
+                        <!-- Approve Modal -->
+                        <div class="modal fade" id="approveModal{{ request.id }}" tabindex="-1" role="dialog">
+                            <div class="modal-dialog" role="document">
+                                <form method="post" action="{% url 'approve_reject_feed_request' request.id %}">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="action" value="approve">
+                                    <div class="modal-content">
+                                        <div class="modal-header">
+                                            <h5 class="modal-title">Approve Feed Request</h5>
+                                            <button type="button" class="close" data-dismiss="modal">&times;</button>
+                                        </div>
+                                        <div class="modal-body">
+                                            <p><strong>Farmer:</strong> {{ request.farmer.name }}</p>
+                                            <p><strong>Quantity:</strong> {{ request.quantity_bags }} bags of {{ request.feed_type }}</p>
+                                            <div class="form-group">
+                                                <label for="approval_notes">Approval Notes (Optional)</label>
+                                                <textarea class="form-control" name="approval_notes"
+                                                    rows="2"></textarea>
+                                            </div>
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button type="submit" class="btn btn-success">Confirm Approve</button>
+                                            <button type="button" class="btn btn-secondary"
+                                                data-dismiss="modal">Cancel</button>
+                                        </div>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                        {% endfor %}
+                        {% if pending_requests|length == 0 %}
+                        <tr>
+                            <td colspan="6" class="text-center text-muted">No pending feed requests.</td>
+                        </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Approved / Picked Tab -->
+    <div class="tab-pane fade" id="approved" role="tabpanel">
+        <div class="card p-3 mb-4">
+            <h5>✅ Approved / Picked Feed Requests</h5>
+            <div class="table-responsive mt-3">
+                <table class="table table-bordered table-sm">
+                    <thead class="thead-light">
+                        <tr>
+                            <th>Farmer</th>
+                            <th>Feed Type</th>
+                            <th>Qty</th>
+                            <th>Status</th>
+                            <th>Approved On</th>
+                            <th>Approved By</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for request in approved_requests %}
+                        <tr>
+                            <td>{{ request.farmer.name }}</td>
+                            <td>{{ request.feed_type|title }}</td>
+                            <td>{{ request.quantity_bags }}</td>
+                            <td>
+                                {% if request.pickup_status == 'picked' %}
+                                <span class="badge badge-success">Picked</span>
+                                {% else %}
+                                <span class="badge badge-warning">Approved</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ request.approved_on|date:"M d, Y" }}</td>
+                            <td>{{ request.approved_by.get_full_name|default:request.approved_by.username }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" class="text-center text-muted">No approved requests found.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- History Tab -->
+    <div class="tab-pane fade" id="history" role="tabpanel">
+        <div class="card p-3 mb-4">
+            <h5>📜 All Feed Request History</h5>
+            <div class="table-responsive mt-3">
+                <table class="table table-sm table-bordered">
+                    <thead class="thead-light">
+                        <tr>
+                            <th>Farmer</th>
+                            <th>Feed Type</th>
+                            <th>Qty</th>
+                            <th>Status</th>
+                            <th>Submitted</th>
+                            <th>Handled By</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for request in all_requests %}
+                        <tr>
+                            <td>{{ request.farmer.name }}</td>
+                            <td>{{ request.feed_type|title }}</td>
+                            <td>{{ request.quantity_bags }}</td>
+                            <td>
+                                <span class="badge 
+                  {% if request.status == 'approved' %}badge-success
+                  {% elif request.status == 'rejected' %}badge-danger
+                  {% else %}badge-secondary
+                  {% endif %}">
+                                    {{ request.status|title }}
+                                </span>
+                            </td>
+                            <td>{{ request.submitted_on|date:"M d, Y" }}</td>
+                            <td>
+                                {% if request.approved_by %}
+                                {{ request.approved_by.get_full_name|default:request.approved_by.username }}
+                                {% else %}
+                                System
+                                {% endif %}
+                            </td>
+
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" class="text-center text-muted">No records found.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

@@ -2,17 +2,19 @@
 
 {% block content %}
 <h2 class="mb-1">📚 Feed Stock History</h2>
-<p class="text-muted mb-4">Track all feed stock added to the system with manufacturer and supplier details.</p>
 
+<p class="text-muted mb-4">Track all feed stock added to the system with manufacturer and supplier details.</p>
+<p><small class="text-muted">Showing {{ feed_stocks|length }} record(s).</small></p>
 <div class="card p-4">
   <div class="table-responsive">
     <table class="table table-bordered table-hover">
       <thead class="thead-light">
         <tr>
-          <th>Date</th>
+          <th>Arrival Date</th>
           <th>Feed Type</th>
           <th>Quantity</th>
-          <th>Unit Cost</th>
+          <th>Purchase Price</th>
+          <th>Selling Price</th>
           <th>Manufacturer</th>
           <th>Supplier</th>
           <th>Notes</th>
@@ -21,16 +23,17 @@
       <tbody>
         {% for stock in feed_stocks %}
         <tr>
-          <td>{{ stock.date_received }}</td>
+          <td>{{ stock.arrival_date }}</td>
           <td>{{ stock.feed_type|capfirst }}</td>
           <td>{{ stock.quantity_bags }} bags</td>
-          <td>UGX {{ stock.unit_cost }}</td>
+          <td>UGX {{ stock.purchase_price }}</td>
+          <td>UGX {{ stock.sale_price }}</td>
           <td>{{ stock.manufacturer.name }}</td>
           <td>{{ stock.supplier.name }}</td>
           <td>{{ stock.notes|default:"—" }}</td>
         </tr>
         {% empty %}
-        <tr><td colspan="7" class="text-center">No feed stock records found.</td></tr>
+        <tr><td colspan="8" class="text-center">No feed stock records found.</td></tr>
         {% endfor %}
       </tbody>
     </table>

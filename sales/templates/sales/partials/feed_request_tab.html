@@ -1,0 +1,102 @@
+<!-- Feed Request Form -->
+<div class="card shadow-sm p-4 mb-5">
+  <h5 class="mb-3">🌽 Feed Request Form</h5>
+  {% if messages %}
+  {% for message in messages %}
+    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+      {{ message }}
+      <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+        <span aria-hidden="true">&times;</span>
+      </button>
+    </div>
+  {% endfor %}
+{% endif %}
+  <form method="post">
+    {% csrf_token %}
+    <input type="hidden" name="form_type" value="feed_request">
+    
+    <div class="form-row">
+      <div class="form-group col-md-6">
+        <label for="farmer">Select Farmer</label>
+        <select name="farmer" class="form-control" required>
+          <option selected disabled>-- Choose Farmer --</option>
+          {% for farmer in farmers %}
+            <option value="{{ farmer.id }}">{{ farmer.name }} - {{ farmer.nin }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="form-group col-md-6">
+        <label for="feed_type">Feed Type</label>
+        <select name="feed_type" class="form-control" required>
+          <option selected disabled>-- Choose Feed Type --</option>
+          <option value="starter">Starter</option>
+          <option value="grower">Grower</option>
+          <option value="finisher">Finisher</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group col-md-6">
+        <label for="quantity_bags">Quantity (bags)</label>
+        <input type="number" name="quantity_bags" class="form-control" min="1" placeholder="e.g. 5" required>
+      </div>
+      <div>
+        <input type="hidden" name="form_type" value="feed_request">
+      </div>
+
+      <div class="form-group col-md-6">
+        <label for="approval_notes">Notes (optional)</label>
+        <textarea name="approval_notes" class="form-control" rows="2" placeholder="e.g. Needed urgently"></textarea>
+      </div>
+    </div>
+
+    <button type="submit" class="btn btn-success">📤 Submit Feed Request</button>
+  </form>
+</div>
+
+<!-- Feed Request History -->
+<div class="card shadow-sm p-4 mb-5">
+  <h5 class="mb-3">📋 Submitted Feed Requests</h5>
+  <div class="table-responsive">
+    <table class="table table-sm table-bordered table-hover mb-0">
+      <thead class="thead-light">
+        <tr>
+          <th>#</th>
+          <th>Farmer</th>
+          <th>Feed Type</th>
+          <th>Quantity</th>
+          <th>Status</th>
+          <th>Submitted On</th>
+          <th>Notes</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for request in feed_requests %}
+        <tr>
+          <td>{{ forloop.counter }}</td>
+          <td>{{ request.farmer.name }}</td>
+          <td>{{ request.feed_type|capfirst }}</td>
+          <td>{{ request.quantity_bags }}</td>
+          <td>
+            {% if request.status == 'approved' %}
+              <span class="badge badge-success">Approved</span>
+            {% elif request.status == 'pending' %}
+              <span class="badge badge-warning text-dark">Pending</span>
+            {% else %}
+              <span class="badge badge-danger">Rejected</span>
+            {% endif %}
+          </td>
+          <td>{{ request.submitted_on }}</td>
+          <td>{{ request.approval_notes|default:"-" }}</td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="7" class="text-center text-muted">No feed requests submitted yet.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>

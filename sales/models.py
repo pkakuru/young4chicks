@@ -2,6 +2,8 @@ from django.db import models
 from datetime import date
 from django.conf import settings
 from manager.models import ChickStock
+from django.contrib.auth.models import User
+from manager.models import ChickStock
 
 
 # Create your models here.
@@ -154,4 +156,41 @@ class Payment(models.Model):
         return f"{self.farmer.name} - {self.payment_for} - UGX {self.amount}"
 
 
+class FeedRequest(models.Model):
+    FEED_TYPE_CHOICES = (
+        ('starter', 'Starter'),
+        ('grower', 'Grower'),
+        ('finisher', 'Finisher'),
+    )
+
+    FEED_STATUS_CHOICES = (
+        ('pending', 'Pending'),
+        ('approved', 'Approved'),
+        ('rejected', 'Rejected'),
+    )
+
+    PICKUP_STATUS_CHOICES = (
+        ('not_picked', 'Not Picked'),
+        ('picked', 'Picked Up'),
+    )
+
+    farmer = models.ForeignKey(Farmer, on_delete=models.CASCADE)
+    feed_type = models.CharField(max_length=10, choices=FEED_TYPE_CHOICES)
+    quantity_bags = models.PositiveIntegerField()
+    requested_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name='feed_requests_made')
+    submitted_on = models.DateTimeField(auto_now_add=True)
+
+    status = models.CharField(max_length=10, choices=FEED_STATUS_CHOICES, default='pending')
+    approved_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='feed_requests_approved')
+    approved_on = models.DateTimeField(null=True, blank=True)
+    approval_notes = models.TextField(blank=True, null=True)
+
+    pickup_status = models.CharField(max_length=12, choices=PICKUP_STATUS_CHOICES, default='not_picked')
+    picked_on = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ['-submitted_on']
+
+    def __str__(self):
+        return f"{self.farmer.name} - {self.quantity_bags} bags ({self.feed_type})"
 

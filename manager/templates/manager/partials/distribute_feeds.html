@@ -1,59 +1,47 @@
-{% block title %} {% endblock %}
+<h4 class="mb-3">📤 Feed Distributions</h4>
+<form method="get" class="form-inline mb-3">
+  <input type="text" name="q" class="form-control mr-2" placeholder="Search farmer or feed type..." value="{{ request.GET.q }}">
+  <button class="btn btn-primary" type="submit">🔍 Filter</button>
+</form>
 
-{% block content %}
-<h2 class="mb-1">📤 Distribute Feeds to Farmer</h2>
-<p class="text-muted mb-4">Allocate available feed stock to a registered farmer. Starter farmers are entitled to 2 bags on pickup.</p>
-
-<div class="card p-4">
-  <form method="POST">
-    {% csrf_token %}
-    <div class="row mb-3">
-      <div class="col-md-6">
-        <label for="farmer"><strong>Select Farmer</strong></label>
-        <select class="form-control" name="farmer_id" required>
-          <option value="">Select farmer</option>
-          {% for farmer in farmers %}
-          <option value="{{ farmer.id }}">{{ farmer.name }} ({{ farmer.nin }})</option>
-          {% endfor %}
-        </select>
-      </div>
-
-      <div class="col-md-6">
-        <label for="feed_stock"><strong>From Feed Batch</strong></label>
-        <select class="form-control" name="feed_stock_id" required>
-          <option value="">Select batch</option>
-          {% for batch in feed_batches %}
-          <option value="{{ batch.id }}">{{ batch.feed_type|capfirst }} | {{ batch.quantity_bags }} bags | UGX {{ batch.unit_cost }}</option>
-          {% endfor %}
-        </select>
-      </div>
-    </div>
-
-    <div class="row mb-3">
-      <div class="col-md-4">
-        <label for="distribution_type"><strong>Distribution Type</strong></label>
-        <select class="form-control" name="distribution_type" required>
-          <option value="initial">Initial Allocation</option>
-          <option value="purchase">Extra Purchase</option>
-        </select>
-      </div>
-      <div class="col-md-4">
-        <label for="quantity_bags"><strong>Quantity</strong></label>
-        <input type="number" class="form-control" name="quantity_bags" placeholder="e.g. 2" required>
-      </div>
-      <div class="col-md-4">
-        <label for="due_date"><strong>Due Date</strong> (Optional)</label>
-        <input type="date" class="form-control" name="due_date">
-      </div>
-    </div>
-
-    <div class="form-group mb-3">
-      <label for="notes"><strong>Notes</strong></label>
-      <textarea class="form-control" name="notes" rows="2" placeholder="Any relevant remarks (e.g. urgent allocation)"></textarea>
-    </div>
-
-    <button type="submit" class="btn btn-primary">📤 Distribute Feeds</button>
-    <a href="{% url 'manager_feeds' %}" class="btn btn-outline-secondary ml-2">🔙 Back</a>
-  </form>
+<div class="table-responsive">
+  <table class="table table-bordered table-striped table-hover">
+    <thead class="thead-dark">
+      <tr>
+        <th>#</th>
+        <th>Farmer</th>
+        <th>Feed Type</th>
+        <th>Quantity</th>
+        <th>Distribution Type</th>
+        <th>Date</th>
+        <th>Due Date</th>
+        <th>Recorded By</th>
+        <th>Notes</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for dist in distributions %}
+      <tr>
+        <td>{{ forloop.counter }}</td>
+        <td>{{ dist.farmer.name }}</td>
+        <td>{{ dist.feed_stock.feed_type|capfirst }}</td>
+        <td>{{ dist.quantity_bags }} bags</td>
+        <td>{{ dist.get_distribution_type_display }}</td>
+        <td>{{ dist.distribution_date }}</td>
+        <td>
+          {% if dist.due_date %}
+            {{ dist.due_date }}
+          {% else %}
+            <span class="text-muted">—</span>
+          {% endif %}
+        </td>
+        <td>{{ dist.recorded_by.username }}</td>
+        <td>{{ dist.notes|default:"—" }}</td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="9" class="text-center text-muted">No feed distributions found.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
 </div>
-{% endblock %}
+
