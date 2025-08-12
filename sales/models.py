@@ -186,6 +186,8 @@ class FeedRequest(models.Model):
     approval_notes = models.TextField(blank=True, null=True)
 
     pickup_status = models.CharField(max_length=12, choices=PICKUP_STATUS_CHOICES, default='not_picked')
+
+    
     picked_on = models.DateTimeField(null=True, blank=True)
 
     class Meta:

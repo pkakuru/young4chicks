@@ -1,0 +1,52 @@
+{% extends 'sales/base.html' %}
+{% block title %}Feed Pickups | Young4ChickS{% endblock %}
+
+{% block content %}
+<h2>✅ Mark Feed Pickup as Completed</h2>
+<p class="text-muted">Find approved feed requests awaiting pickup confirmation.</p>
+
+{% if messages %}
+  {% for message in messages %}
+    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+      {{ message }}
+      <button type="button" class="close" data-dismiss="alert"><span>&times;</span></button>
+    </div>
+  {% endfor %}
+{% endif %}
+
+<div class="card p-3">
+  <h5 class="mb-3">Approved Feed Requests (Not Yet Picked)</h5>
+  <div class="table-responsive">
+    <table class="table table-bordered align-middle table-sm">
+      <thead class="table-light">
+        <tr>
+          <th>#</th>
+          <th>Farmer</th>
+          <th>Feed Type</th>
+          <th>Qty (bags)</th>
+          <th>Status</th>
+          <th>Approved On</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in requests %}
+        <tr>
+          <td>#{{ r.id }}</td>
+          <td>{{ r.farmer.name }}</td>
+          <td>{{ r.feed_type|capfirst }}</td>
+          <td>{{ r.quantity_bags }}</td>
+          <td><span class="badge badge-success">Approved</span></td>
+          <td>{{ r.approved_on|date:"M d, Y H:i" }}</td>
+          <td>
+            <a href="{% url 'mark_feed_request_as_picked' r.id %}" class="btn btn-success btn-sm">Confirm Pickup</a>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="7" class="text-center text-muted">No approved feed requests awaiting pickup.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

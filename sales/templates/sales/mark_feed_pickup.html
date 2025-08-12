@@ -1,0 +1,76 @@
+
+{% extends 'sales/base.html' %}
+{% block title %}Confirm Feed Pickup | Young4ChickS{% endblock %}
+
+{% block content %}
+{% load humanize %}
+<h2 class="mb-1">✅ Confirm Feed Pickup</h2>
+<p class="text-muted mb-4">Review request details and record payment before issuing feed.</p>
+
+<!-- Request Details -->
+<div class="card p-4 mb-4">
+  <h5 class="mb-3">📄 Request Details</h5>
+  <div class="row">
+    <div class="col-md-6">
+      <p><strong>Farmer:</strong> {{ req.farmer.name }}</p>
+      <p><strong>NIN:</strong> {{ req.farmer.nin }}</p>
+      <p><strong>Feed Type:</strong> {{ req.feed_type|capfirst }}</p>
+    </div>
+    <div class="col-md-6">
+      <p><strong>Request ID:</strong> #{{ req.id }}</p>
+      <p><strong>Quantity:</strong> {{ req.quantity_bags }} bag{{ req.quantity_bags|pluralize }}</p>
+      <p class="mb-0"><strong>Expected Payment:</strong> UGX {{ expected_total|floatformat:0|intcomma }}</p>
+      <small class="text-muted">Calculated from current FIFO batch prices.</small>
+    </div>
+  </div>
+</div>
+
+<div class="row">
+  <!-- Left: Payment & Pickup form -->
+  <div class="col-md-6">
+    <div class="card p-4">
+      <h5 class="mb-3">🧾 Payment & Pickup</h5>
+      <form method="post">
+        {% csrf_token %}
+
+        <div class="form-group mb-3">
+          <label><strong>Pickup Notes</strong></label>
+          <textarea name="pickup_notes" class="form-control" rows="2"
+                    placeholder="e.g. Picked by farmer, receipt #..."></textarea>
+        </div>
+
+        <div class="form-group mb-3">
+          <label><strong>💵 Payment for Feeds (UGX)</strong></label>
+          <input type="number" name="paid_feeds" class="form-control" min="0" step="1000"
+                 placeholder="Enter amount (e.g. {{ expected_total|floatformat:0 }})" required>
+          <small class="text-muted">Payment must be ≥ UGX {{ expected_total|floatformat:0|intcomma }} before issuing.</small>
+        </div>
+
+        <div class="d-flex">
+          <button type="submit" class="btn btn-success">✅ Confirm Pickup</button>
+          <a href="{% url 'sales_feed_pickup' %}" class="btn btn-outline-secondary ml-2">🔙 Back</a>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Right: Expected Amounts (stacked cards) -->
+  <div class="col-md-6">
+    <div class="position-sticky" style="top:12px;">
+      <div class="card p-3 mb-3">
+        <div class="small text-muted">Feeds</div>
+        <div class="h5 mb-0">UGX {{ expected_total|floatformat:0|intcomma }}</div>
+        <div class="text-muted small">
+          {{ req.quantity_bags }} bag{{ req.quantity_bags|pluralize }} &middot; FIFO pricing from current batches
+        </div>
+      </div>
+
+      <div class="card p-3 bg-light">
+        <div class="small text-muted">Total</div>
+        <div class="h5 mb-0">UGX {{ expected_total|floatformat:0|intcomma }}</div>
+        <div class="text-muted small">Feeds must be fully paid before pickup.</div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

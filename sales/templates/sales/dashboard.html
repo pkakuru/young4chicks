@@ -1,47 +1,171 @@
 {% extends 'sales/base.html' %}
-
-{% block title %}Submit Request | Young4ChickS{% endblock %}
+{% load humanize %}
+{% block title %}Edit Farmer | Young4ChickS{% endblock %}
 
 {% block content %}
-<h2>📊 Sales Rep Dashboard</h2>
-    <p class="text-muted">Welcome! You can register farmers, submit chick requests, and manage pickups.</p>
+<style>
+  /* Reusable summary card style (same look as manager) */
+  .card-summary {
+    background: #fff;
+    border: 1px solid #e9ecef;
+    border-left: 4px solid #dee2e6;
+    border-radius: .5rem;
+    padding: 1rem 1.25rem;
+    box-shadow: 0 1px 1px rgba(0,0,0,.02);
+    height: 100%;
+  }
+  .card-summary h6 {
+    margin: 0 0 .25rem 0;
+    font-size: .8rem;
+    text-transform: uppercase;
+    letter-spacing: .02em;
+    color: #6c757d;
+  }
+  .card-summary h3 {
+    margin: 0;
+    line-height: 1.1;
+    font-weight: 700;
+    font-size: 1.4rem;
+  }
+  .card-summary small {
+    display: block;
+    margin-top: .25rem;
+    color: #6c757d;
+  }
 
-    <!-- Summary Cards -->
-    <div class="row mt-4">
-      <div class="col-md-4">
-        <div class="card text-white bg-primary mb-3">
-          <div class="card-body">
-            <h5 class="card-title">Registered Farmers</h5>
-            <p class="card-text fs-4">182</p>
-          </div>
-        </div>
-      </div>
-      <div class="col-md-4">
-        <div class="card text-white bg-warning mb-3">
-          <div class="card-body">
-            <h5 class="card-title">Pending Requests</h5>
-            <p class="card-text fs-4">8</p>
-          </div>
-        </div>
-      </div>
-      <div class="col-md-4">
-        <div class="card text-white bg-success mb-3">
-          <div class="card-body">
-            <h5 class="card-title">Completed Pickups</h5>
-            <p class="card-text fs-4">104</p>
-          </div>
-        </div>
+  /* Left color accents */
+  .border-left-primary  { border-left-color: #007bff; }
+  .border-left-success  { border-left-color: #28a745; }
+  .border-left-warning  { border-left-color: #ffc107; }
+  .border-left-info     { border-left-color: #17a2b8; }
+  .border-left-secondary{ border-left-color: #6c757d; }
+
+  /* Optional: mono digits for cleaner number alignment */
+  .text-mono { font-variant-numeric: tabular-nums; }
+</style>
+
+
+<div class="row mb-4">
+  <div class="col-md-3">
+    <div class="card-summary border-left-info">
+      <h6>Pending Chick Pickups</h6>
+      <h3>{{ pending_chick_count }} <small class="text-muted">req</small></h3>
+      <small class="text-muted">{{ pending_chick_qty }} chicks</small>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card-summary border-left-primary">
+      <h6>Pending Feed Pickups</h6>
+      <h3>{{ pending_feed_count }} <small class="text-muted">req</small></h3>
+      <small class="text-muted">{{ pending_feed_bags }} bag{{ pending_feed_bags|pluralize }}</small>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card-summary border-left-success">
+      <h6>Cash Today</h6>
+      <h3>UGX {{ today_total_cash|floatformat:0|intcomma }}</h3>
+      <small class="text-muted">Chicks: UGX {{ today_chick_cash|floatformat:0|intcomma }} • Feeds: UGX {{ today_feed_cash|floatformat:0|intcomma }}</small>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card-summary border-left-success">
+      <h6>Cash This Week</h6>
+      <h3>UGX {{ week_total_cash|floatformat:0|intcomma }}</h3>
+      <small class="text-muted">Chicks: UGX {{ week_chick_cash|floatformat:0|intcomma }} • Feeds: UGX {{ week_feed_cash|floatformat:0|intcomma }}</small>
+    </div>
+  </div>
+</div>
+
+<div class="row mb-4">
+  <div class="col-md-3">
+    <div class="card-summary border-left-secondary">
+      <h6>Chick Stock (Now)</h6>
+      <h3>{{ chicks_in_stock|intcomma }}</h3>
+      <small class="text-muted">chicks in brooder</small>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card-summary border-left-secondary">
+      <h6>Feed Stock (Now)</h6>
+      <h3>{{ feed_bags_in_stock|intcomma }}</h3>
+      <small class="text-muted">bags available</small>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card-summary border-left-warning">
+      <h6>Overdue Initial-Feed Follow-ups</h6>
+      <h3>{{ overdue_followups }}</h3>
+      <small class="text-muted">need calls today</small>
+    </div>
+  </div>
+</div>
+<div class="row">
+  <div class="col-md-6">
+    <div class="card p-3">
+      <h5 class="mb-3">Next Chick Pickups</h5>
+      <div class="table-responsive">
+        <table class="table table-sm table-bordered">
+          <thead class="thead-light">
+            <tr>
+              <th>#</th>
+              <th>Farmer</th>
+              <th>Type</th>
+              <th>Qty</th>
+              <th>Approved</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for r in next_chick_pickups %}
+            <tr>
+              <td>{{ forloop.counter }}</td>
+              <td>{{ r.farmer.name }}</td>
+              <td>{{ r.chick_type|cut:"_"|title }}</td>
+              <td>{{ r.quantity }}</td>
+              <td>{{ r.approval_date|date:"M d, Y" }}</td>
+              <td><a class="btn btn-sm btn-success" href="{% url 'mark_request_as_picked' r.id %}">Confirm</a></td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="6" class="text-center text-muted">No pending chick pickups.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
       </div>
     </div>
+  </div>
 
-    <!-- Quick Actions -->
-    <div class="mt-5">
-      <h5 class="mb-3">⚡ Quick Actions</h5>
-      <div class="d-flex flex-wrap gap-3">
-        <a href="#" class="btn btn-outline-primary">➕ Register New Farmer</a>
-        <a href="#" class="btn btn-outline-success">📥 Submit Chick Request</a>
-        <a href="#" class="btn btn-outline-info">🔍 View Farmer Requests</a>
-        <a href="#" class="btn btn-outline-dark">✅ Mark Request as Completed</a>
+  <div class="col-md-6">
+    <div class="card p-3">
+      <h5 class="mb-3">Next Feed Pickups</h5>
+      <div class="table-responsive">
+        <table class="table table-sm table-bordered">
+          <thead class="thead-light">
+            <tr>
+              <th>#</th>
+              <th>Farmer</th>
+              <th>Type</th>
+              <th>Bags</th>
+              <th>Approved</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for r in next_feed_pickups %}
+            <tr>
+              <td>{{ forloop.counter }}</td>
+              <td>{{ r.farmer.name }}</td>
+              <td>{{ r.feed_type|capfirst }}</td>
+              <td>{{ r.quantity_bags }}</td>
+              <td>{{ r.approved_on|date:"M d, Y H:i" }}</td>
+              <td><a class="btn btn-sm btn-success" href="{% url 'mark_feed_request_as_picked' r.id %}">Confirm</a></td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="6" class="text-center text-muted">No pending feed pickups.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
       </div>
     </div>
+  </div>
+</div>
 {% endblock %}

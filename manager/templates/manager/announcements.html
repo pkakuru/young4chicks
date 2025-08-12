@@ -1,67 +1,213 @@
 {% extends 'manager/base.html' %}
-{% block title %}Chick Stock{% endblock %}
+{% block title %}Announcements & Content{% endblock %}
 {% block content %}
-  <h2>📢 Announcements</h2>
-    <p class="text-muted">Post important updates and view previous announcements made to farmers.</p>
 
-    <div class="row">
-      <!-- Left Column -->
-      <div class="col-md-8">
-        <!-- Add New Announcement -->
-        <div class="card p-3 mb-4">
-          <h5 class="mb-3">➕ Post New Announcement</h5>
-          <form>
-            <div class="form-group">
-              <label for="announcement-text">Message</label>
-              <textarea class="form-control" id="announcement-text" rows="3" placeholder="e.g. Next batch of chicks ready July 15–17..."></textarea>
-            </div>
-            <button class="btn btn-primary mt-2">Post Announcement</button>
+{% if messages %}
+  <div class="mb-3">
+    {% for m in messages %}
+      <div class="alert alert-{{ m.tags|default:'info' }} py-2 mb-2">{{ m }}</div>
+    {% endfor %}
+  </div>
+{% endif %}
+
+<h2>📢 Announcements & Homepage Content</h2>
+<p class="text-muted">Post announcements, add upcoming trainings, and share farmer tips. These show on the public homepage.</p>
+
+<div class="row">
+  <!-- Left: Create forms -->
+  <div class="col-md-6">
+    <!-- Announcement -->
+    <div class="card p-3 mb-4">
+      <h5 class="mb-3">➕ New Announcement</h5>
+      <form method="post" action="{% url 'create_announcement' %}">
+        {% csrf_token %}
+        <div class="form-group">
+          <label>Title</label>
+          <input name="title" class="form-control" required>
+        </div>
+        <div class="form-group">
+          <label>Message</label>
+          <textarea name="content" class="form-control" rows="3" required></textarea>
+        </div>
+        <button class="btn btn-primary">Post Announcement</button>
+      </form>
+    </div>
+
+    <!-- Training -->
+    <div class="card p-3 mb-4">
+      <h5 class="mb-3">📅 Add Training</h5>
+      <form method="post" action="{% url 'create_training' %}">
+        {% csrf_token %}
+        <div class="form-group">
+          <label>Title</label>
+          <input name="title" class="form-control" placeholder="e.g. Urban Brooding Basics" required>
+        </div>
+        <div class="form-group">
+          <label>Date</label>
+          <input type="date" name="date" class="form-control" required>
+        </div>
+        <div class="form-group">
+          <label>Location (optional)</label>
+          <input name="location" class="form-control" placeholder="e.g. Youth Hall">
+        </div>
+        <div class="form-group">
+          <label>Notes (optional)</label>
+          <textarea name="notes" class="form-control" rows="2"></textarea>
+        </div>
+        <button class="btn btn-primary">Add Training</button>
+      </form>
+    </div>
+
+    <!-- Tip -->
+    <div class="card p-3 mb-4">
+      <h5 class="mb-3">🧠 Add Farmer Tip</h5>
+      <form method="post" action="{% url 'create_tip' %}">
+        {% csrf_token %}
+        <div class="form-group">
+          <label>Tip (max ~200 chars)</label>
+          <input name="text" class="form-control" placeholder="e.g. Clean drinkers daily to prevent disease" maxlength="200" required>
+        </div>
+        <button class="btn btn-primary">Add Tip</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Right: Lists -->
+  <div class="col-md-6">
+    <!-- Announcements list -->
+    <div class="card p-3 mb-4">
+      <h5 class="mb-3">📜 Announcements</h5>
+      <ul class="list-group">
+        {% for a in announcements %}
+        <li class="list-group-item d-flex justify-content-between align-items-center">
+          <div>
+            <strong>{{ a.title }}</strong><br>
+            <small>{{ a.content }}</small><br>
+            <small class="text-muted">{{ a.posted_on|date:"M d, Y H:i" }}</small>
+          </div>
+          <form method="post" action="{% url 'delete_announcement' a.id %}" onsubmit="return confirm('Delete this announcement?');">
+            {% csrf_token %}
+            <button class="btn btn-sm btn-outline-danger">Delete</button>
           </form>
-        </div>
+        </li>
+        {% empty %}
+        <li class="list-group-item text-center text-muted">No announcements yet.</li>
+        {% endfor %}
+      </ul>
+    </div>
 
-        <!-- Recent Announcements List -->
-        <div class="card p-3">
-          <h5 class="mb-3">📜 Recent Announcements</h5>
-          <ul class="list-group">
-            <li class="list-group-item d-flex justify-content-between align-items-center">
-              <span>🐣 Chicks ready for pickup between July 15–17, 2025</span>
-              <button class="btn btn-sm btn-outline-danger">Delete</button>
-            </li>
-            <li class="list-group-item d-flex justify-content-between align-items-center">
-              <span>📅 Training on Urban Brooding: July 20, 2025 at Youth Hall</span>
-              <button class="btn btn-sm btn-outline-danger">Delete</button>
-            </li>
-            <li class="list-group-item d-flex justify-content-between align-items-center">
-              <span>📦 Feed collection starts July 25 — bring your bag receipt</span>
-              <button class="btn btn-sm btn-outline-danger">Delete</button>
-            </li>
-          </ul>
-        </div>
-      </div>
+    <!-- Trainings list -->
+    <div class="card p-3 mb-4">
+      <h5 class="mb-3">📅 Trainings</h5>
+      <ul class="list-group">
+        {% for t in trainings %}
+        <li class="list-group-item d-flex justify-content-between align-items-center">
+          <div>
+            <strong>{{ t.title }}</strong>
+            <div class="small text-muted">{{ t.date|date:"M d, Y" }}{% if t.location %} • {{ t.location }}{% endif %}</div>
+            {% if t.notes %}<div class="small">{{ t.notes }}</div>{% endif %}
+          </div>
+          <form method="post" action="{% url 'delete_training' t.id %}" onsubmit="return confirm('Delete this training?');">
+            {% csrf_token %}
+            <button class="btn btn-sm btn-outline-danger">Delete</button>
+          </form>
+        </li>
+        {% empty %}
+        <li class="list-group-item text-center text-muted">No trainings yet.</li>
+        {% endfor %}
+      </ul>
+    </div>
 
-      <!-- Right Column: Stats Card -->
-      <div class="col-md-4">
-        <div class="card p-3 mb-4">
-          <h6 class="text-muted mb-3">📊 Announcement Stats</h6>
-          <ul class="list-group list-group-flush">
-            <li class="list-group-item d-flex justify-content-between">
-              <span>Total This Month</span>
-              <strong>7</strong>
-            </li>
-            <li class="list-group-item d-flex justify-content-between">
-              <span>Last Posted</span>
-              <strong>July 12</strong>
-            </li>
-            <li class="list-group-item d-flex justify-content-between">
-              <span>Farmers Reached</span>
-              <strong>152</strong>
-            </li>
-            <li class="list-group-item d-flex justify-content-between">
-              <span>Next Event</span>
-              <strong>July 20</strong>
-            </li>
-          </ul>
+    <!-- Tips list -->
+    <div class="card p-3 mb-4">
+      <h5 class="mb-3">🧠 Farmer Tips</h5>
+      <ul class="list-group">
+        {% for tip in tips %}
+        <li class="list-group-item d-flex justify-content-between align-items-center">
+          <span>{{ tip.text }}</span>
+          <form method="post" action="{% url 'delete_tip' tip.id %}" onsubmit="return confirm('Delete this tip?');">
+            {% csrf_token %}
+            <button class="btn btn-sm btn-outline-danger">Delete</button>
+          </form>
+        </li>
+        {% empty %}
+        <li class="list-group-item text-center text-muted">No tips yet.</li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- Quote of the Week -->
+<div class="row mt-4">
+  <div class="col-md-6">
+    <div class="card p-3 mb-4">
+      <h5 class="mb-3">🗣️ Add Quote of the Week</h5>
+      <form method="post" action="{% url 'manager_announcements' %}">
+        {% csrf_token %}
+        <input type="hidden" name="form_type" value="quote">
+        <div class="form-group">
+          <label>Quote text</label>
+          <textarea name="text" class="form-control" rows="2" required placeholder="e.g. Farming is a commitment to the future."></textarea>
         </div>
+        <div class="form-group">
+          <label>Author (optional)</label>
+          <input type="text" name="author" class="form-control" placeholder="e.g. Hon. Youth MP">
+        </div>
+        <div class="form-row">
+          <div class="form-group col-md-6">
+            <label>Effective From</label>
+            <input type="date" name="effective_from" class="form-control" required>
+          </div>
+          <div class="form-group col-md-6">
+            <label>Effective To (optional)</label>
+            <input type="date" name="effective_to" class="form-control">
+          </div>
+        </div>
+        <button class="btn btn-primary">Save Quote</button>
+      </form>
+    </div>
+  </div>
+
+  <div class="col-md-6">
+    <div class="card p-3 mb-4">
+      <h5 class="mb-3">📜 Quotes</h5>
+      <div class="table-responsive">
+        <table class="table table-sm table-bordered">
+          <thead class="thead-light">
+            <tr>
+              <th>Quote</th>
+              <th>Range</th>
+              <th>Author</th>
+              <th style="width: 90px;">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for q in quotes %}
+            <tr>
+              <td>{{ q.text|truncatechars:60 }}</td>
+              <td>
+                {{ q.effective_from }} — 
+                {% if q.effective_to %}{{ q.effective_to }}{% else %}<span class="text-muted">open</span>{% endif %}
+              </td>
+              <td>{{ q.author|default:"—" }}</td>
+              <td>
+                <form method="post" action="{% url 'manager_announcements' %}" onsubmit="return confirm('Delete this quote?');">
+                  {% csrf_token %}
+                  <input type="hidden" name="form_type" value="delete_quote">
+                  <input type="hidden" name="quote_id" value="{{ q.id }}">
+                  <button class="btn btn-sm btn-outline-danger">Delete</button>
+                </form>
+              </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="4" class="text-center text-muted">No quotes yet.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
       </div>
     </div>
+  </div>
+</div>
+
 {% endblock %}

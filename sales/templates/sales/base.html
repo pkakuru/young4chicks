@@ -65,7 +65,8 @@
       <a href="{% url 'register_farmer' %}" class="{% if request.resolver_match.url_name == 'register_farmer' %}active{% endif %}">📝 Register Farmer</a>
       <a href="{% url 'submit_chick_request' %}" class="{% if request.resolver_match.url_name == 'submit_chick_request' %}active{% endif %}">📥 Submit Request</a>
       <a href="{% url 'sales_history' %}" class="{% if request.resolver_match.url_name == 'sales_history' %}active{% endif %}">📄 Farmer History</a>
-      <a href="{% url 'sales_pickup' %}" class="{% if request.resolver_match.url_name == 'sales_pickup' %}active{% endif %}">✅ Mark Pickup</a>
+      <a href="{% url 'sales_pickup' %}" class="{% if request.resolver_match.url_name == 'sales_pickup' %}active{% endif %}">✅ Chicks Pickup</a>
+      <a href="{% url 'sales_feed_pickup' %}" class="{% if request.resolver_match.url_name == 'sales_feed_pickup' %}active{% endif %}">✅ Feeds Pickup</a>
       <a href="/" class="text-danger">🚪 Logout</a>
     </div>
     <div class="sidebar-footer">

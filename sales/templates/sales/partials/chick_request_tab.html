@@ -2,14 +2,14 @@
 <p class="text-muted mb-4">Fill the form below to submit a new chick request for a registered farmer.</p>
 
 {% if messages %}
-  {% for message in messages %}
-    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-      {{ message }}
-      <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-        <span aria-hidden="true">&times;</span>
-      </button>
-    </div>
-  {% endfor %}
+{% for message in messages %}
+<div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+  {{ message }}
+  <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+    <span aria-hidden="true">&times;</span>
+  </button>
+</div>
+{% endfor %}
 {% endif %}
 
 <!-- Request Form Card -->
@@ -17,14 +17,14 @@
   <h5 class="mb-3">📝 Chick Request Form</h5>
   <form method="post">
     {% csrf_token %}
-    
+
     <div class="form-row">
       <div class="form-group col-md-6">
         <label for="farmer">Select Farmer</label>
         <select name="farmer" class="form-control" required>
           <option selected disabled>-- Choose Farmer --</option>
           {% for farmer in farmers %}
-            <option value="{{ farmer.id }}">{{ farmer.name }} - {{ farmer.nin }}</option>
+          <option value="{{ farmer.id }}">{{ farmer.name }} - {{ farmer.nin }}</option>
           {% endfor %}
         </select>
       </div>
@@ -52,7 +52,8 @@
 
       <div class="form-group col-md-6">
         <label for="notes">Notes (optional)</label>
-        <textarea name="notes" class="form-control" rows="2" placeholder="e.g. Needed urgently, vaccinated batch preferred."></textarea>
+        <textarea name="notes" class="form-control" rows="2"
+          placeholder="e.g. Needed urgently, vaccinated batch preferred."></textarea>
       </div>
     </div>
 
@@ -72,6 +73,7 @@
           <th>Chick Type</th>
           <th>Quantity</th>
           <th>Status</th>
+          <th>Pickup Status</th>
           <th>Submitted On</th>
           <th>Notes</th>
         </tr>
@@ -85,11 +87,18 @@
           <td>{{ request.quantity }}</td>
           <td>
             {% if request.status == 'approved' %}
-              <span class="badge badge-success">Approved</span>
+            <span class="badge badge-success">Approved</span>
             {% elif request.status == 'pending' %}
-              <span class="badge badge-warning text-dark">Pending</span>
+            <span class="badge badge-warning text-dark">Pending</span>
             {% else %}
-              <span class="badge badge-danger">Rejected</span>
+            <span class="badge badge-danger">Rejected</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if request.is_picked %}
+            <span class="badge badge-primary">Picked</span>
+            {% else %}
+            <span class="badge badge-secondary">Not Picked</span>
             {% endif %}
           </td>
           <td>{{ request.submitted_on }}</td>

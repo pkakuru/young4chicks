@@ -1,5 +1,5 @@
 <h4 class="mb-3">📤 Feed Distributions</h4>
-<form method="get" class="form-inline mb-3">
+<form method="get" action="{% url 'manager_feeds' %}" class="form-inline mb-3">
   <input type="text" name="q" class="form-control mr-2" placeholder="Search farmer or feed type..." value="{{ request.GET.q }}">
   <button class="btn btn-primary" type="submit">🔍 Filter</button>
 </form>
@@ -20,28 +20,41 @@
       </tr>
     </thead>
     <tbody>
-      {% for dist in distributions %}
-      <tr>
-        <td>{{ forloop.counter }}</td>
-        <td>{{ dist.farmer.name }}</td>
-        <td>{{ dist.feed_stock.feed_type|capfirst }}</td>
-        <td>{{ dist.quantity_bags }} bags</td>
-        <td>{{ dist.get_distribution_type_display }}</td>
-        <td>{{ dist.distribution_date }}</td>
-        <td>
-          {% if dist.due_date %}
-            {{ dist.due_date }}
-          {% else %}
-            <span class="text-muted">—</span>
-          {% endif %}
-        </td>
-        <td>{{ dist.recorded_by.username }}</td>
-        <td>{{ dist.notes|default:"—" }}</td>
-      </tr>
-      {% empty %}
-      <tr><td colspan="9" class="text-center text-muted">No feed distributions found.</td></tr>
-      {% endfor %}
-    </tbody>
+  {% for dist in distributions %}
+  <tr>
+    <td>{{ forloop.counter }}</td>
+    <td>{{ dist.farmer.name }}</td>
+    <td>
+      {% if dist.feed_stock %}
+        {{ dist.feed_stock.feed_type|capfirst }}
+      {% else %}
+        <span class="text-muted">—</span>
+      {% endif %}
+    </td>
+    <td>{{ dist.quantity_bags }} bags</td>
+    <td>{{ dist.get_distribution_type_display }}</td>
+    <td>{{ dist.distribution_date }}</td>
+    <td>
+      {% if dist.due_date %}
+        {{ dist.due_date }}
+      {% else %}
+        <span class="text-muted">—</span>
+      {% endif %}
+    </td>
+    <td>
+      {% if dist.recorded_by %}
+        {{ dist.recorded_by.username }}
+      {% else %}
+        <span class="text-muted">—</span>
+      {% endif %}
+    </td>
+    <td>{{ dist.notes|default:"—" }}</td>
+  </tr>
+  {% empty %}
+  <tr><td colspan="9" class="text-center text-muted">No feed distributions found.</td></tr>
+  {% endfor %}
+</tbody>
+
   </table>
 </div>
 

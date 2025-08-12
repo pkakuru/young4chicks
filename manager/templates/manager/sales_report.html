@@ -1,95 +1,160 @@
 {% extends 'manager/base.html' %}
+{% load humanize %}
 {% block title %}Sales Report{% endblock %}
+
 {% block content %}
-<h2 class="mb-1">📈 Sales Report</h2>
-<p class="text-muted mb-4">View detailed statistics of chick sales and revenue performance.</p>
+<h2 class="mb-1">📈 Sales & Payments</h2>
+<p class="text-muted mb-4">Live view of picked sales, cash in, and initial feed receivables.</p>
 
 <!-- Summary Cards -->
 <div class="row mb-4">
-  <div class="col-md-4">
+  <div class="col-md-3">
     <div class="card-summary border-left-primary">
-      <h6>Total Chicks Sold</h6>
-      <h3>1,820</h3>
+      <h6>Chicks Picked (All Time)</h6>
+      <h3>{{ chicks_sold|intcomma }}</h3>
+      <small class="text-muted">This week: {{ chicks_this_week|intcomma }} • This month: {{ chicks_this_month|intcomma }}</small>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card-summary border-left-success">
+      <h6>Chicks Expected (UGX)</h6>
+      <h3>{{ chicks_expected }} / {{ chicks_in_stock }}</h3>
+<small class="text-muted">Expected / Available in Stock</small>
+
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card-summary border-left-success">
+      <h6>Payments: Chicks (UGX)</h6>
+      <h3>UGX {{ total_chick_payments|floatformat:0|intcomma }}</h3>
+      <small class="text-muted">Cash received for chicks</small>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card-summary border-left-info">
+      <h6>Payments: Feeds (UGX)</h6>
+      <h3>UGX {{ total_feed_payments|floatformat:0|intcomma }}</h3>
+      <small class="text-muted">Includes initial & purchases</small>
+    </div>
+  </div>
+</div>
+
+<!-- Initial Feeds Receivables -->
+<div class="row mb-4">
+  <div class="col-md-4">
+    <div class="card-summary border-left-warning">
+      <h6>Initial Feeds – Value</h6>
+      <h3>UGX {{ total_initial_value|floatformat:0|intcomma }}</h3>
+      <small class="text-muted">Issued @ batch price</small>
     </div>
   </div>
   <div class="col-md-4">
     <div class="card-summary border-left-success">
-      <h6>Total Revenue (UGX)</h6>
-      <h3>UGX 2,853,000</h3>
+      <h6>Initial Feeds – Paid</h6>
+      <h3>UGX {{ total_initial_paid|floatformat:0|intcomma }}</h3>
+      <small class="text-muted">Linked to allocations</small>
     </div>
   </div>
   <div class="col-md-4">
-    <div class="card-summary border-left-warning">
-      <h6>Chicks Sold This Week</h6>
-      <h3>460</h3>
+    <div class="card-summary border-left-danger">
+      <h6>Initial Feeds – Balance</h6>
+      <h3>UGX {{ total_initial_balance|floatformat:0|intcomma }}</h3>
+      <small class="text-muted">Outstanding receivable</small>
     </div>
   </div>
 </div>
 
-<!-- Chart Placeholder -->
-<div class="card p-4 mb-4">
-  <h5 class="mb-3">📊 Sales Trends</h5>
-  <div style="height: 300px; background-color: #f1f1f1; display: flex; align-items: center; justify-content: center;">
-    <em>Chart coming soon...</em>
+<div class="row mb-4">
+  <div class="col-md-6">
+    <div class="card p-3 h-100">
+      <h5 class="mb-2">⏳ Coming Due (7 days)</h5>
+      <div class="display-6">{{ due_soon_count|intcomma }}</div>
+      <small class="text-muted">Initial feed allocations with a balance due within 7 days</small>
+    </div>
+  </div>
+  <div class="col-md-6">
+    <div class="card p-3 h-100">
+      <h5 class="mb-2">⚠️ Overdue</h5>
+      <div class="display-6">{{ overdue_count|intcomma }}</div>
+      <small class="text-muted">Initial feed allocations past due with a balance</small>
+    </div>
   </div>
 </div>
 
-<!-- Filters -->
-<div class="d-flex justify-content-between align-items-center mb-3">
-  <!-- Chick Type Dropdown -->
-  <div class="form-group mb-0">
-    <label for="chickType">Filter by Chick Type:</label>
-    <select id="chickType" class="form-control">
-      <option selected>All</option>
-      <option>Broiler</option>
-      <option>Layer</option>
-      <option>Local</option>
-    </select>
+<div class="row">
+  <!-- Top Debtors -->
+  <div class="col-lg-6 mb-4">
+    <div class="card p-3">
+      <h5 class="mb-3">🏷️ Top 10 Farmers (Initial Feeds Balance)</h5>
+      <div class="table-responsive">
+        <table class="table table-sm table-bordered mb-0">
+          <thead class="thead-light">
+            <tr>
+              <th>#</th>
+              <th>Farmer</th>
+              <th class="text-right">Balance (UGX)</th>
+              <th class="text-right">Issued</th>
+              <th class="text-right">Paid</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for d in debtors %}
+            <tr>
+              <td>{{ forloop.counter }}</td>
+              <td>{{ d.farmer__name }}</td>
+              <td class="text-right">UGX {{ d.balance|floatformat:0|intcomma }}</td>
+              <td class="text-right">UGX {{ d.total_value|floatformat:0|intcomma }}</td>
+              <td class="text-right">UGX {{ d.total_paid|floatformat:0|intcomma }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="5" class="text-center text-muted">No outstanding balances.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
   </div>
 
-  <!-- Time Filters -->
-  <div class="btn-group">
-    <button class="btn btn-outline-secondary active">This Week</button>
-    <button class="btn btn-outline-secondary">This Month</button>
-    <button class="btn btn-outline-secondary">All Time</button>
+  <!-- Recent Payments -->
+  <div class="col-lg-6 mb-4">
+    <div class="card p-3">
+      <h5 class="mb-3">💵 Recent Payments</h5>
+      <div class="table-responsive">
+        <table class="table table-sm table-bordered mb-0">
+          <thead class="thead-light">
+            <tr>
+              <th>Date</th>
+              <th>Farmer</th>
+              <th>For</th>
+              <th class="text-right">Amount (UGX)</th>
+              <th>Notes</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for p in recent_payments %}
+            <tr>
+              <td>{{ p.payment_date }}</td>
+              <td>{{ p.farmer.name }}</td>
+              <td>{{ p.get_payment_for_display }}</td>
+              <td class="text-right">UGX {{ p.amount|floatformat:0|intcomma }}</td>
+              <td>{{ p.notes|default:"—"|truncatechars:40 }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="5" class="text-center text-muted">No payments yet.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
   </div>
 </div>
 
-<!-- Sales Table -->
-<div class="card p-4">
-  <h5 class="mb-3">💰 Detailed Sales Records</h5>
-  <div class="table-responsive">
-    <table class="table table-sm table-bordered table-hover">
-      <thead class="thead-light">
-        <tr>
-          <th>Sale ID</th>
-          <th>Date</th>
-          <th>Farmer</th>
-          <th>Chick Type</th>
-          <th>Quantity</th>
-          <th>Amount (UGX)</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td>#S1034</td>
-          <td>Jul 23, 2025</td>
-          <td>Jane Atwine</td>
-          <td>Broiler</td>
-          <td>100</td>
-          <td>UGX 165,000</td>
-        </tr>
-        <tr>
-          <td>#S1033</td>
-          <td>Jul 20, 2025</td>
-          <td>Kato Yusuf</td>
-          <td>Layer</td>
-          <td>200</td>
-          <td>UGX 330,000</td>
-        </tr>
-        <!-- More rows -->
-      </tbody>
-    </table>
-  </div>
-</div>
+<style>
+  .card-summary{background:#fff;border:1px solid #eee;border-left-width:6px;padding:12px 14px;border-radius:8px}
+  .border-left-primary{border-left-color:#007bff}
+  .border-left-success{border-left-color:#28a745}
+  .border-left-info{border-left-color:#17a2b8}
+  .border-left-warning{border-left-color:#ffc107}
+  .border-left-danger{border-left-color:#dc3545}
+</style>
 {% endblock %}

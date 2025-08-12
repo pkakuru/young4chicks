@@ -3,25 +3,25 @@
   <h5 class="mb-3">🌽 Feed Request Form</h5>
   {% if messages %}
   {% for message in messages %}
-    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-      {{ message }}
-      <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-        <span aria-hidden="true">&times;</span>
-      </button>
-    </div>
+  <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+    {{ message }}
+    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+      <span aria-hidden="true">&times;</span>
+    </button>
+  </div>
   {% endfor %}
-{% endif %}
+  {% endif %}
   <form method="post">
     {% csrf_token %}
     <input type="hidden" name="form_type" value="feed_request">
-    
+
     <div class="form-row">
       <div class="form-group col-md-6">
         <label for="farmer">Select Farmer</label>
         <select name="farmer" class="form-control" required>
           <option selected disabled>-- Choose Farmer --</option>
           {% for farmer in farmers %}
-            <option value="{{ farmer.id }}">{{ farmer.name }} - {{ farmer.nin }}</option>
+          <option value="{{ farmer.id }}">{{ farmer.name }} - {{ farmer.nin }}</option>
           {% endfor %}
         </select>
       </div>
@@ -68,6 +68,7 @@
           <th>Feed Type</th>
           <th>Quantity</th>
           <th>Status</th>
+          <th>Pickup Status</th>
           <th>Submitted On</th>
           <th>Notes</th>
         </tr>
@@ -81,13 +82,21 @@
           <td>{{ request.quantity_bags }}</td>
           <td>
             {% if request.status == 'approved' %}
-              <span class="badge badge-success">Approved</span>
+            <span class="badge badge-success">Approved</span>
             {% elif request.status == 'pending' %}
-              <span class="badge badge-warning text-dark">Pending</span>
+            <span class="badge badge-warning text-dark">Pending</span>
             {% else %}
-              <span class="badge badge-danger">Rejected</span>
+            <span class="badge badge-danger">Rejected</span>
             {% endif %}
           </td>
+          <td>
+      {% if request.pickup_status == 'picked' %}
+        <span class="badge badge-primary">Picked</span>
+        <div class="small text-muted">{{ request.picked_on|date:"M d, Y" }}</div>
+      {% else %}
+        <span class="badge badge-secondary">Not Picked</span>
+      {% endif %}
+    </td>
           <td>{{ request.submitted_on }}</td>
           <td>{{ request.approval_notes|default:"-" }}</td>
         </tr>

@@ -22,15 +22,15 @@
 
     <!-- Pending Requests Tab -->
     {% if messages %}
-  {% for message in messages %}
+    {% for message in messages %}
     <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-      {{ message }}
-      <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-        <span aria-hidden="true">&times;</span>
-      </button>
+        {{ message }}
+        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+        </button>
     </div>
-  {% endfor %}
-{% endif %}
+    {% endfor %}
+    {% endif %}
 
 
     <div class="tab-pane fade show active" id="pending" role="tabpanel">
@@ -112,8 +112,10 @@
                             <th>Type</th>
                             <th>Qty</th>
                             <th>Status</th>
+                            <th>Picked On</th>
+                            <th>Pickup Notes</th>
                             <th>Approved On</th>
-                            <th>Approved By</th>
+                            <!-- <th>Approved By</th> -->
                         </tr>
                     </thead>
                     <tbody>
@@ -123,16 +125,52 @@
                             <td>{{ request.farmer.name }}</td>
                             <td>{{ request.chick_type|title }}</td>
                             <td>{{ request.quantity }}</td>
-                            <td><span class="badge badge-success">Approved</span></td>
+
+                            <!-- Status shows Picked vs Approved -->
+                            <td>
+                                {% if request.is_picked %}
+                                <span class="badge badge-primary badge-fixed">Picked</span>
+                                {% else %}
+                                <span class="badge badge-success badge-fixed">Approved</span>
+                                {% endif %}
+                            </td>
+
+                            <!-- Picked date -->
+                            <td>
+                                {% if request.is_picked %}
+                                {{ request.picked_on|date:"M d, Y" }}
+                                {% else %}
+                                <span class="text-muted">—</span>
+                                {% endif %}
+                            </td>
+
+                            <!-- Pickup notes -->
+                            <td>
+                                {% if request.pickup_notes %}
+                                {{ request.pickup_notes }}
+                                {% else %}
+                                <em class="text-muted">—</em>
+                                {% endif %}
+                            </td>
+
                             <td>{{ request.approval_date|date:"M d, Y" }}</td>
-                            <td>{{ request.approved_by.get_full_name | default:request.approved_by.username }}</td>
+
+                            <!-- Guard approved_by possibly being None -->
+                            <!-- <td>
+                                {% if request.approved_by %}
+                                {{ request.approved_by.get_full_name|default:request.approved_by.username }}
+                                {% else %}
+                                <span class="text-muted">—</span>
+                                {% endif %}
+                            </td> -->
                         </tr>
                         {% empty %}
                         <tr>
-                            <td colspan="7" class="text-center text-muted">No approved requests yet.</td>
+                            <td colspan="9" class="text-center text-muted">No approved requests yet.</td>
                         </tr>
                         {% endfor %}
                     </tbody>
+
 
                     </tbody>
                 </table>
@@ -153,42 +191,154 @@
                 <table class="table table-bordered table-sm">
                     <thead class="thead-light">
                         <tr>
-                            <th>Request ID</th>
                             <th>Farmer</th>
-                            <th>Type</th>
+                            <th>Chick Type</th>
                             <th>Qty</th>
-                            <th>Status</th>
-                            <th>Decision Date</th>
-                            <th>Handled By</th>
+                            <th>Chicks (UGX)</th>
+                            <th>Picked?</th>
+                            <th>Feeds</th>
+                            <th>Notes</th>
+                            <th>Submitted On</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for request in history_requests %}
                         <tr>
-                            <td>#REQ{{ request.id }}</td>
-                            <td>{{ request.farmer.name }}</td>
-                            <td>{{ request.chick_type|title }}</td>
-                            <td>{{ request.quantity }}</td>
+                            <td class="align-bottom">{{ request.farmer.name }}</td>
+                            <td class="align-bottom">{{ request.chick_type|title }}</td>
+                            <td class="align-bottom">{{ request.quantity }}</td>
+
+                            {# Expected / Paid / Balance #}
                             <td>
-                                <span class="badge
-                                {% if request.status == 'approved' %}badge-success
-                                {% elif request.status == 'rejected' %}badge-danger
-                                {% else %}badge-secondary
-                                {% endif %}">
-                                    {{ request.status|title }}
-                                </span>
+                                <div>Expected: <strong>UGX {{ request.expected_chicks_amount|floatformat:0 }}</strong>
+                                </div>
+                                <div>Paid: UGX {{ request.chicks_paid_today|floatformat:0 }}</div>
+                                <div>Balance: <span
+                                        class="{% if request.chicks_balance > 0 %}text-danger{% else %}text-success{% endif %}">
+                                        UGX {{ request.chicks_balance|floatformat:0 }}</span>
+                                </div>
                             </td>
-                            <td>{{ request.approval_date|date:"M d, Y" }}</td>
-                            <td>{{ request.approved_by.get_full_name | default_if_none:request.approved_by.username }}</td>
+
+                            {# Picked badge + date #}
+                            <td class="align-bottom">
+                                {% if request.is_picked %}
+                                <span class="badge badge-primary badge-fixed">Picked</span>
+                                <div class="small text-muted">{{ request.picked_on|date:"M d, Y" }}</div>
+                                {% else %}
+                                <span class="badge badge-success badge-fixed">Approved</span>
+                                {% endif %}
+                            </td>
+
+                            {# Feeds allocation + due status #}
+                            <td>
+                                {% if request.feeds_allocated_bags %}
+                                <div>{{ request.feeds_allocated_bags }} bag{{ request.feeds_allocated_bags|pluralize }}
+                                </div>
+                                {% if request.feeds_due_date %}
+                                <div class="small text-muted">Due: {{ request.feeds_due_date|date:"M d, Y" }}</div>
+                                {% endif %}
+                                <div>
+                                    {% if request.feeds_status == 'paid' %}
+                                    <span class="badge badge-success badge-fixed">Paid</span>
+                                    {% elif request.feeds_status == 'overdue' %}
+                                    <span class="badge badge-danger badge-fixed">Overdue</span>
+                                    {% elif request.feeds_status == 'due' %}
+                                    <span class="badge badge-warning badge-fixed">Due</span>
+                                    {% else %}
+                                    <span class="text-muted small">—</span>
+                                    {% endif %}
+                                </div>
+                                {% else %}
+                                <span class="text-muted">—</span>
+                                {% endif %}
+                            </td>
+
+                            <td class="notes-preview align-bottom">
+                                {% with note=request.pickup_notes|default:request.notes %}
+                                {% if note %}
+                                {{ note|truncatechars:40 }}
+                                {% if note|length > 40 %}
+                                <a href="#" class="ml-1" data-toggle="modal"
+                                    data-target="#noteModal{{ request.id }}">More…</a>
+                                {% endif %}
+                                {% else %}
+                                <span class="text-muted">—</span>
+                                {% endif %}
+                                {% endwith %}
+                            </td>
+
+
+
+                            <td class="align-bottom">{{ request.submitted_on|date:"M d, Y" }}</td>
                         </tr>
+                        {% with note=request.pickup_notes|default:request.notes %}
+                        <div class="modal fade" id="noteModal{{ request.id }}" tabindex="-1" role="dialog"
+                            aria-labelledby="noteModalLabel{{ request.id }}" aria-hidden="true">
+                            <div class="modal-dialog modal-dialog-scrollable modal-md" role="document">
+                                <div class="modal-content">
+                                    <div class="modal-header">
+                                        <h5 class="modal-title" id="noteModalLabel{{ request.id }}">
+                                            Notes — {{ request.farmer.name }} (REQ{{ request.id }})
+                                        </h5>
+                                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                            <span aria-hidden="true">&times;</span>
+                                        </button>
+                                    </div>
+                                    <div class="modal-body">
+                                        {% if note %}
+                                        <div style="white-space:pre-wrap">{{ note }}</div>
+                                        {% else %}
+                                        <span class="text-muted">No notes.</span>
+                                        {% endif %}
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-secondary"
+                                            data-dismiss="modal">Close</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endwith %}
+
+
                         {% empty %}
                         <tr>
-                            <td colspan="7" class="text-center text-muted">No historical records yet.</td>
+                            <td colspan="9" class="text-center text-muted">No historical records yet.</td>
                         </tr>
+                        {% with note=request.pickup_notes|default:request.notes %}
+                        <div class="modal fade" id="noteModal{{ request.id }}" tabindex="-1" role="dialog"
+                            aria-labelledby="noteModalLabel{{ request.id }}" aria-hidden="true">
+                            <div class="modal-dialog modal-dialog-scrollable modal-md" role="document">
+                                <div class="modal-content">
+                                    <div class="modal-header">
+                                        <h5 class="modal-title" id="noteModalLabel{{ request.id }}">
+                                            Notes — {{ request.farmer.name }} (REQ{{ request.id }})
+                                        </h5>
+                                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                            <span aria-hidden="true">&times;</span>
+                                        </button>
+                                    </div>
+                                    <div class="modal-body">
+                                        {% if note %}
+                                        <div style="white-space:pre-wrap">{{ note }}</div>
+                                        {% else %}
+                                        <span class="text-muted">No notes.</span>
+                                        {% endif %}
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-secondary"
+                                            data-dismiss="modal">Close</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endwith %}
+
                         {% endfor %}
                     </tbody>
-
                 </table>
+
+
             </div>
         </div>
     </div>

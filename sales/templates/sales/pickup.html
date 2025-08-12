@@ -26,6 +26,7 @@
           <thead class="table-light">
             <tr>
               <th>Request ID</th>
+              <th>Farmer Name</th>
               <th>Date</th>
               <th>Chick Type</th>
               <th>Quantity</th>
@@ -39,6 +40,7 @@
             {% for req in requests %}
 <tr>
   <td>#{{ req.id }}</td>
+  <td>{{ req.farmer.name }}</td>
   <td>{{ req.approval_date|date:"M d, Y" }}</td>
   <td>{{ req.get_chick_type_display }}</td>
   <td>{{ req.quantity }}</td>

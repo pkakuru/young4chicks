@@ -1,9 +1,11 @@
+
 {% extends 'sales/base.html' %}
 {% block title %}Confirm Pickup | Young4ChickS{% endblock %}
 
 {% block content %}
+{% load humanize %}
 <h2 class="mb-1">✅ Confirm Chick Pickup</h2>
-<p class="text-muted mb-4">Review request details and confirm that the farmer has physically picked the chicks.</p>
+<p class="text-muted mb-4">Review request details, record payments (feeds optional), and confirm pickup.</p>
 
 <!-- Request Details -->
 <div class="card p-4 mb-4">
@@ -11,7 +13,7 @@
   <div class="row">
     <div class="col-md-6">
       <p><strong>Farmer:</strong> {{ request.farmer.name }}</p>
-      <p><strong>Farmer NIN:</strong> {{ request.farmer.nin }}</p>
+      <p><strong>NIN:</strong> {{ request.farmer.nin }}</p>
       <p><strong>Farmer Type:</strong> {{ request.farmer.farmer_type|capfirst }}</p>
     </div>
     <div class="col-md-6">
@@ -22,31 +24,77 @@
   </div>
 </div>
 
-<!-- Confirmation Form -->
-<div class="card p-4">
-  <h5 class="mb-3">📝 Pickup Confirmation & Payments</h5>
-  <form method="post">
-    {% csrf_token %}
-    
-    <div class="form-group mb-3">
-      <label><strong>Pickup Notes:</strong></label>
-      <textarea name="pickup_notes" class="form-control" rows="3" placeholder="E.g. Picked by farmer personally..." required></textarea>
-    </div>
+<div class="row">
+  <!-- Left: Pickup Confirmation & Payments -->
+  <div class="col-md-6">
+    <div class="card p-4">
+      <h5 class="mb-3">📝 Pickup Confirmation & Payments</h5>
+      <form method="post">
+        {% csrf_token %}
 
-    <div class="form-group mb-3">
-      <label><strong>💵 Payment for Chicks (UGX):</strong></label>
-      <input type="number" name="paid_chicks" class="form-control" placeholder="Enter amount (e.g. 165000)" min="0" step="1000">
-    </div>
+        <div class="form-group mb-3">
+          <label><strong>Pickup Notes</strong></label>
+          <textarea name="pickup_notes" class="form-control" rows="3"
+                    placeholder="E.g. Picked by farmer personally..." required></textarea>
+        </div>
 
-    <div class="form-group mb-3">
-      <label><strong>💵 Payment for Feeds (UGX):</strong></label>
-      <input type="number" name="paid_feeds" class="form-control" placeholder="Enter amount (e.g. 260000)" min="0" step="1000">
-    </div>
+        <div class="form-group mb-3">
+          <label><strong>💵 Payment for Chicks (UGX)</strong></label>
+          <input type="number" name="paid_chicks" class="form-control" min="0" step="1000"
+                 placeholder="Enter amount">
+          <small class="text-muted">Expected: UGX {{ expected_chick_total|floatformat:0|intcomma }}</small>
+        </div>
 
-    <div class="d-flex justify-content-start mt-4">
-      <button type="submit" class="btn btn-success">✅ Confirm Pickup</button>
-      <a href="{% url 'sales_pickup' %}" class="btn btn-outline-secondary ml-3">🔙 Back</a>
+        <div class="form-group mb-3">
+          <label><strong>💵 Payment for Initial Feeds (UGX)</strong> <span class="text-muted small">(optional)</span></label>
+          <input type="number" name="paid_feeds" class="form-control" min="0" step="1000"
+                 placeholder="Enter amount (optional)">
+          {% if feeds_available_for_two %}
+            <small class="text-muted d-block">
+              Expected for 2 bags: UGX {{ expected_initial_feeds_total|floatformat:0|intcomma }} — payable within 2 months if not paid now.
+            </small>
+          {% else %}
+            <small class="text-danger d-block">Insufficient stock for 2 bags at the moment.</small>
+          {% endif %}
+        </div>
+
+        <div class="d-flex mt-3">
+          <button type="submit" class="btn btn-success">✅ Confirm Pickup</button>
+          <a href="{% url 'sales_pickup' %}" class="btn btn-outline-secondary ml-2">🔙 Back</a>
+        </div>
+      </form>
     </div>
-  </form>
+  </div>
+
+  <!-- Right: Expected Amounts (stacked) -->
+  <div class="col-md-6">
+    <div class="position-sticky" style="top:12px;">  {# keeps the cards in view while scrolling #}
+
+      <div class="card p-3 mb-3">
+        <div class="small text-muted">Chicks</div>
+        <div class="h5 mb-0">UGX {{ expected_chick_total|floatformat:0|intcomma }}</div>
+        <div class="text-muted small">(@ UGX 1,650 × {{ request.quantity }})</div>
+      </div>
+
+      <div class="card p-3 mb-3">
+        <div class="small text-muted">Initial Feeds (2 bags)</div>
+        {% if feeds_available_for_two %}
+          <div class="h5 mb-0">UGX {{ expected_initial_feeds_total|floatformat:0|intcomma }}</div>
+          <div class="text-muted small">Calculated by FIFO from current feed batches.</div>
+          <div class="text-muted small">Payment optional now; due in 2 months.</div>
+        {% else %}
+          <div class="h6 text-danger mb-0">Not enough feed stock for 2 bags</div>
+          <div class="text-muted small">Ask manager to restock.</div>
+        {% endif %}
+      </div>
+
+      <div class="card p-3 bg-light">
+        <div class="small text-muted">Total (context)</div>
+        <div class="h5 mb-0">UGX {{ grand_total|floatformat:0|intcomma }}</div>
+        <div class="text-muted small">Feeds payment can be deferred.</div>
+      </div>
+
+    </div>
+  </div>
 </div>
 {% endblock %}
