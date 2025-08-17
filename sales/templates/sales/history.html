@@ -64,11 +64,11 @@
           <td>{{ r.quantity|intcomma }}</td>
           <td>
             {% if r.status == 'approved' %}
-              <span class="badge bg-success">Approved</span>
+              <span class="badge bg-success badge-fixed">Approved</span>
             {% elif r.status == 'pending' %}
-              <span class="badge bg-warning text-dark">Pending</span>
+              <span class="badge bg-warning text-dark badge-fixed">Pending</span>
             {% else %}
-              <span class="badge bg-danger">Rejected</span>
+              <span class="badge bg-danger badge-fixed">Rejected</span>
             {% endif %}
           </td>
           <td>
@@ -113,11 +113,11 @@
           <td>{{ r.quantity_bags|intcomma }}</td>
           <td>
             {% if r.status == 'approved' %}
-              <span class="badge bg-success">Approved</span>
+              <span class="badge bg-success badge-fixed">Approved</span>
             {% elif r.status == 'pending' %}
-              <span class="badge bg-warning text-dark">Pending</span>
+              <span class="badge bg-warning text-dark badge-fixed">Pending</span>
             {% else %}
-              <span class="badge bg-danger">Rejected</span>
+              <span class="badge bg-danger badge-fixed">Rejected</span>
             {% endif %}
           </td>
           <td>

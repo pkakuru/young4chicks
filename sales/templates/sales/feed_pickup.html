@@ -36,7 +36,7 @@
           <td>{{ r.farmer.name }}</td>
           <td>{{ r.feed_type|capfirst }}</td>
           <td>{{ r.quantity_bags }}</td>
-          <td><span class="badge badge-success">Approved</span></td>
+          <td><span class="badge badge-success badge-fixed">Approved</span></td>
           <td>{{ r.approved_on|date:"M d, Y H:i" }}</td>
           <td>
             <a href="{% url 'mark_feed_request_as_picked' r.id %}" class="btn btn-success btn-sm">Confirm Pickup</a>

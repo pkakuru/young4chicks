@@ -120,11 +120,11 @@
               <td class="align-middle">{{ batch.recorded_on|date:"M d, Y" }}</td>
               <td class="text-center align-middle">
                 {% if batch.age_days <= 14 %}
-                <span class="badge badge-success">Available</span>
+                <span class="badge badge-success badge-fixed">Available</span>
                 {% elif batch.age_days <= 21 %}
-                <span class="badge badge-warning text-dark">Aging</span>
+                <span class="badge badge-warning text-dark badge-fixed">Aging</span>
                 {% else %}
-                <span class="badge badge-danger">Expiring Soon</span>
+                <span class="badge badge-danger badge-fixed">Expiring Soon</span>
                 {% endif %}
               </td>
             </tr>

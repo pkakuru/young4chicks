@@ -1,95 +1,278 @@
-from django.shortcuts import render, redirect, get_object_or_404
-from home.models import User
-from django.contrib import messages
-from manager.models import ChickStock
-from django.core.paginator import Paginator
-from sales.models import ChickRequest, Farmer, Manufacturer, Supplier, FeedStock, Payment
+# Standard library
+import json
+from decimal import Decimal
 from datetime import date, timedelta
-from django.db.models import Sum
 from collections import defaultdict
-from django.views.decorators.http import require_POST
-from django.contrib.auth.decorators import login_required
-from datetime import datetime
-from sales.models import FeedRequest, FeedDistribution
+
+# Django core
+from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib import messages
+from django.core.paginator import Paginator
+from django.core.serializers.json import DjangoJSONEncoder
+from django.utils.safestring import mark_safe
+from django.utils import timezone
 from django.utils.timezone import now
-from django.db.models import Q
+from django.views.decorators.http import require_POST
+from django.contrib.auth.decorators import login_required, user_passes_test
+from django.db import transaction
+from django.db.models import (
+    Sum, Q, F, Case, When, Value, DecimalField
+)
+from django.urls import reverse
 
-
-
+# Local apps
+from home.models import User, Training, Announcement, FarmerTip, QuoteOfTheWeek
+from manager.models import ChickStock, ChickAllocation
+from sales.models import (
+    ChickRequest, Farmer, FeedStock, FeedDistribution,
+    Manufacturer, Supplier, Payment, FeedRequest
+)
 
 # Create your views here.
 #============================
 # 1) DASHBOARD
 #============================
+
+@login_required
 def dashboard_view(request):
+    """
+    Manager dashboard with richer, actionable context.
+    - Totals + per-type splits
+    - Weekly stats
+    - Chick & feed stock breakdowns
+    - Revenue splits (chicks vs feeds; 'both' split 50/50)
+    - Upcoming trainings
+    - Operational alerts (low stock, stale pending, unpicked approvals, expiring feeds, dues soon)
+    - Last 5 approvals mini-table
+    """
     today = date.today()
-    week_start = today - timedelta(days=today.weekday())
+    week_start = today - timedelta(days=today.weekday())  # Monday
     month_start = today.replace(day=1)
 
-    # Total Approved requests
-    approved_requests = ChickRequest.objects.filter(status = 'approved')
+    # ---------------------- Picked (sold) ----------------------
+    picked_qs = ChickRequest.objects.filter(is_picked=True)
+    total_chicks_sold = picked_qs.aggregate(total=Sum('quantity'))['total'] or 0
 
-    picked_requests = ChickRequest.objects.filter(is_picked = True)
+    # Sold by chick type (overall)
+    sold_by_type_qs = picked_qs.values('chick_type').annotate(total=Sum('quantity'))
+    chicks_sold_by_type = {
+        'broiler_local': 0,
+        'broiler_exotic': 0,
+        'layer_local': 0,
+        'layer_exotic': 0,
+    }
+    for row in sold_by_type_qs:
+        chicks_sold_by_type[row['chick_type']] = row['total'] or 0
 
-    total_chicks_sold = picked_requests.aggregate(total=Sum('quantity'))['total'] or 0
-    total_revenue = total_chicks_sold * 1650
+    # Weekly (picked this week)
+    weekly_picked = picked_qs.filter(picked_on__gte=week_start)
+    chicks_this_week = weekly_picked.aggregate(total=Sum('quantity'))['total'] or 0
 
-    # Weekly stats
-    weekly = picked_requests.filter(picked_on__gte=week_start)
-    chicks_this_week = weekly.aggregate(total=Sum('quantity'))['total'] or 0
-    revenue_this_week = chicks_this_week * 1650
+    week_by_type_qs = weekly_picked.values('chick_type').annotate(total=Sum('quantity'))
+    chicks_week_by_type = {
+        'broiler_local': 0,
+        'broiler_exotic': 0,
+        'layer_local': 0,
+        'layer_exotic': 0,
+    }
+    for row in week_by_type_qs:
+        chicks_week_by_type[row['chick_type']] = row['total'] or 0
 
-
-    # Pending requests
+    # ---------------------- Requests / farmers ----------------------
     pending_requests = ChickRequest.objects.filter(status='pending').count()
-
-    # Farmers count
     total_farmers = Farmer.objects.count()
+    approved_this_month = ChickRequest.objects.filter(status='approved', approval_date__gte=month_start).count()
 
-    # This months approvals
-    approved_this_month = approved_requests.filter(approval_date__gte=month_start).count()
+    # ---------------------- Chick stock (by type) ----------------------
+    stock_by_type_qs = ChickStock.objects.values('chick_type').annotate(total=Sum('quantity'))
+    stock_dict = {
+        'broiler_local': 0,
+        'broiler_exotic': 0,
+        'layer_local': 0,
+        'layer_exotic': 0,
+    }
+    for row in stock_by_type_qs:
+        stock_dict[row['chick_type']] = row['total'] or 0
+    total_remaining_stock = sum(stock_dict.values())
 
-    # Feed Summaries
-    total_feed_stock = FeedStock.objects.aggregate(total=Sum('quantity_bags'))['total'] or 0
+    # ---------------------- Feed stock (by feed_type) ----------------------
+    feed_stock_by_type_qs = FeedStock.objects.values('feed_type').annotate(total=Sum('quantity_bags'))
+    feed_stock_by_type = {'starter': 0, 'grower': 0, 'finisher': 0}
+    for row in feed_stock_by_type_qs:
+        feed_stock_by_type[row['feed_type']] = row['total'] or 0
+    total_feed_stock = sum(feed_stock_by_type.values())
 
-    # Feeds expiring in next 14 days
-    soon_expiring_feeds = FeedStock.objects.filter(expiry_date__isnull=False, expiry_date__lte=today + timedelta(days=14)).count()
+    # ---------------------- Revenue via Payment (Decimal-safe) ----------------------
+    money = DecimalField(max_digits=12, decimal_places=2)
+    ZERO = Decimal('0')
+    TWO = Decimal('2')
 
-    # Feed distributions due for payment soon (e.g Within 7 days)
-    feeds_due_soon = FeedDistribution.objects.filter(
-        due_date__isnull=False,
-        due_date__lte=today + timedelta(days=7)
-    ).count()
+    pay_all = Payment.objects.all()
+    agg_all = pay_all.aggregate(
+        chicks=Sum(Case(When(payment_for='chicks', then=F('amount')), default=Value(ZERO), output_field=money)),
+        feeds =Sum(Case(When(payment_for='feeds',  then=F('amount')), default=Value(ZERO), output_field=money)),
+        both  =Sum(Case(When(payment_for='both',   then=F('amount')), default=Value(ZERO), output_field=money)),
+    )
+    both_all = agg_all['both'] or ZERO
+    total_revenue_breakdown = {
+        'chicks': (agg_all['chicks'] or ZERO) + (both_all / TWO),
+        'feeds':  (agg_all['feeds']  or ZERO) + (both_all / TWO),
+    }
+    total_revenue = total_revenue_breakdown['chicks'] + total_revenue_breakdown['feeds']
 
-    # STOCK STATS
-    stock_by_type = ChickStock.objects.values('chick_type').annotate(total=Sum('quantity'))
-    stock_dict = {entry['chick_type']: entry['total'] for entry in stock_by_type}
+    # Weekly revenue
+    pay_week = pay_all.filter(payment_date__gte=week_start)
+    agg_week = pay_week.aggregate(
+        chicks=Sum(Case(When(payment_for='chicks', then=F('amount')), default=Value(ZERO), output_field=money)),
+        feeds =Sum(Case(When(payment_for='feeds',  then=F('amount')), default=Value(ZERO), output_field=money)),
+        both  =Sum(Case(When(payment_for='both',   then=F('amount')), default=Value(ZERO), output_field=money)),
+    )
+    both_week = agg_week['both'] or ZERO
+    revenue_week_breakdown = {
+        'chicks': (agg_week['chicks'] or ZERO) + (both_week / TWO),
+        'feeds':  (agg_week['feeds']  or ZERO) + (both_week / TWO),
+    }
+    revenue_this_week = revenue_week_breakdown['chicks'] + revenue_week_breakdown['feeds']
 
-    total_remaining_stock = sum([
-        stock_dict.get('broiler_local', 0),
-        stock_dict.get('broiler_exotic', 0),
-        stock_dict.get('layer_local', 0),
-        stock_dict.get('layer_exotic', 0),
-    ])
+    # ---------------------- Upcoming trainings ----------------------
+    upcoming_trainings = Training.objects.filter(date__gte=today).order_by('date')[:4]
+
+    # ---------------------- Operational Alerts (actionable) ----------------------
+    LOW_CHICK_THRESHOLD = 50   # tweak as needed
+
+    # Low chick stock by type
+    low_chick_stock = []
+    for ctype, qty in (stock_dict or {}).items():
+        if (qty or 0) < LOW_CHICK_THRESHOLD:
+            low_chick_stock.append({"type": ctype, "qty": qty or 0})
+    low_chick_stock.sort(key=lambda x: x["qty"])  # smallest first
+
+    # Unpicked approvals older than 3 days
+    unpicked_qs = (
+        ChickRequest.objects
+        .filter(status='approved', is_picked=False, approval_date__lt=today - timedelta(days=3))
+        .select_related('farmer')
+        .order_by('-approval_date')[:5]
+    )
+    unpicked_approvals = [
+        {
+            "id": r.id,
+            "farmer": r.farmer.name,
+            "days": (today - (r.approval_date or month_start)).days
+        }
+        for r in unpicked_qs
+    ]
+
+    # Pending requests older than 48 hours
+    pending_qs = (
+        ChickRequest.objects
+        .filter(status='pending', submitted_on__lt=today - timedelta(days=2))
+        .select_related('farmer')
+        .order_by('-submitted_on')[:5]
+    )
+    pending_stale = [
+        {
+            "id": r.id,
+            "farmer": r.farmer.name,
+            # submitted_on is a DateField in your model, so we approximate hours
+            "days": (today - r.submitted_on).days * 24,
+        }
+        for r in pending_qs
+    ]
+
+    # Feeds expiring within 14 days (detailed list)
+    feed_expiring_qs = (
+        FeedStock.objects
+        .filter(expiry_date__isnull=False, expiry_date__lte=today + timedelta(days=14))
+        .order_by('expiry_date')[:5]
+    )
+    feed_expiring = [
+        {"feed_type": f.feed_type, "bags": f.quantity_bags or 0, "expiry": f.expiry_date}
+        for f in feed_expiring_qs
+    ]
+
+    # Feed distributions due within 7 days (top 5)
+    feed_due_qs = (
+        FeedDistribution.objects
+        .filter(due_date__isnull=False, due_date__lte=today + timedelta(days=7))
+        .select_related('farmer')
+        .order_by('due_date')[:5]
+    )
+    feed_due_soon_list = [
+        {"farmer": fd.farmer.name, "bags": getattr(fd, 'quantity_bags', 0) or 0, "due": fd.due_date}
+        for fd in feed_due_qs
+    ]
+
+    alerts = {
+        "counts": {
+            "unpicked_over_3d": len(unpicked_approvals),
+            "pending_over_48h": len(pending_stale),
+            "low_chick_types": len(low_chick_stock),
+        },
+        "low_chick_stock": low_chick_stock,
+        "unpicked_approvals": unpicked_approvals,
+        "pending_stale": pending_stale,
+        "feed_expiring": feed_expiring,
+        "feed_due_soon": feed_due_soon_list,
+    }
+
+    # ---------------------- Last 5 approvals (for mini-table) ----------------------
+    last_approvals = (
+        ChickRequest.objects
+        .filter(status='approved')
+        .select_related('farmer')
+        .order_by('-approval_date', '-id')[:5]
+    )
 
     context = {
+        # Totals
         'total_chicks_sold': total_chicks_sold,
         'total_revenue': total_revenue,
+
+        # Per-type totals
+        'chicks_sold_by_type': chicks_sold_by_type,
+
+        # Weekly
         'chicks_this_week': chicks_this_week,
         'revenue_this_week': revenue_this_week,
+        'chicks_week_by_type': chicks_week_by_type,
+
+        # Revenue splits
+        'total_revenue_breakdown': total_revenue_breakdown,
+        'revenue_week_breakdown': revenue_week_breakdown,
+
+        # Requests / farmers
         'pending_requests': pending_requests,
         'total_farmers': total_farmers,
         'approved_this_month': approved_this_month,
+
+        # Chick stock
         'stock_dict': stock_dict,
         'total_remaining_stock': total_remaining_stock,
-        'feeds_due_soon': feeds_due_soon,
-        'soon_expiring_feeds': soon_expiring_feeds,
+
+        # Feed stock
         'total_feed_stock': total_feed_stock,
+        'feed_stock_by_type': feed_stock_by_type,
+
+        # Events
+        'upcoming_trainings': upcoming_trainings,
+
+        # Alerts payload for the Operational Alerts card
+        'alerts': alerts,
+
+        # Mini-table
+        'last_approvals': last_approvals,
+
+        # Username display
+        'username': request.user.username,
     }
     return render(request, 'manager/dashboard.html', context)
+
 #======================================
 # 2) CHICK STOCK & CHICK REQUESTS
 #======================================
+
+@login_required
 def chick_stock_view(request):
     if request.method == 'POST':
         chick_type = request.POST.get('chick_type')
@@ -156,109 +339,320 @@ def chick_stock_view(request):
 
     return render(request, 'manager/stock.html', context)
 
+@login_required
 def review_chick_requests(request):
-    pending_requests = ChickRequest.objects.filter(status='pending').select_related('farmer', 'approved_by').order_by('-submitted_on')
-    approved_requests = ChickRequest.objects.filter(status='approved').select_related('farmer', 'approved_by').order_by('-approval_date')
-    history_requests = ChickRequest.objects.exclude(status='pending').select_related('farmer', 'approved_by').order_by('-submitted_on') # All non-pending requests
+    tab = request.GET.get('tab', 'pending')
+    q = (request.GET.get('q') or '').strip()
 
+    pending_qs = (ChickRequest.objects.filter(status='pending')
+                  .select_related('farmer', 'approved_by').order_by('-submitted_on'))
+    approved_qs = (ChickRequest.objects.filter(status='approved')
+                  .select_related('farmer', 'approved_by').order_by('-approval_date', '-id'))
+    history_qs = (ChickRequest.objects.exclude(status='pending')
+                  .select_related('farmer', 'approved_by').order_by('-submitted_on', '-id'))
 
-    # attach computed metrics (no DB changes)
-    today = date.today()
+    if q:
+        if tab == 'pending':
+            pending_qs = pending_qs.filter(
+                Q(farmer__name__icontains=q) |
+                Q(farmer__nin__icontains=q) |
+                Q(id__icontains=q) |
+                Q(chick_type__icontains=q)
+            )
+        elif tab == 'approved':
+            approved_qs = approved_qs.filter(
+                Q(farmer__name__icontains=q) |
+                Q(farmer__nin__icontains=q) |
+                Q(id__icontains=q) |
+                Q(chick_type__icontains=q) |
+                Q(approval_date__icontains=q)
+            )
+        elif tab == 'history':
+            history_qs = history_qs.filter(
+                Q(farmer__name__icontains=q) |
+                Q(farmer__nin__icontains=q) |
+                Q(id__icontains=q) |
+                Q(chick_type__icontains=q) |
+                Q(submitted_on__icontains=q)
+            )
+
+    # annotate history for display
+    today = timezone.localdate()  # use local date to avoid TZ off-by-one
+    history_requests = list(history_qs)
     for r in history_requests:
-        # Chicks money
         r.expected_chicks_amount = r.quantity * 1650
         r.chicks_paid_today = 0
         if r.is_picked and r.picked_on:
             r.chicks_paid_today = (Payment.objects
-                .filter(farmer=r.farmer, payment_for='chicks', payment_date=r.picked_on)
-                .aggregate(s=Sum('amount'))['s'] or 0)
+                                   .filter(farmer=r.farmer, payment_for='chicks', payment_date=r.picked_on)
+                                   .aggregate(s=Sum('amount'))['s'] or 0)
         r.chicks_balance = r.expected_chicks_amount - r.chicks_paid_today
-
-        # Feeds allocation on pickup day (initial 2 bags)
         r.feeds_allocated_bags = 0
         r.feeds_due_date = None
         r.feeds_status = None
         if r.is_picked and r.picked_on:
             dists = FeedDistribution.objects.filter(
-                farmer=r.farmer,
-                distribution_type='initial',
-                distribution_date=r.picked_on
+                farmer=r.farmer, distribution_type='initial', distribution_date=r.picked_on
             )
             r.feeds_allocated_bags = dists.aggregate(s=Sum('quantity_bags'))['s'] or 0
             r.feeds_due_date = dists.order_by('-due_date').values_list('due_date', flat=True).first()
-
-            # Simple payment heuristic: any feeds payment on/after pickup day
             feeds_paid_amount = (Payment.objects
-                .filter(farmer=r.farmer, payment_for='feeds', payment_date__gte=r.picked_on)
-                .aggregate(s=Sum('amount'))['s'] or 0)
-
+                                 .filter(farmer=r.farmer, payment_for='feeds', payment_date__gte=r.picked_on)
+                                 .aggregate(s=Sum('amount'))['s'] or 0)
             if feeds_paid_amount and r.feeds_allocated_bags:
                 r.feeds_status = 'paid'
             elif r.feeds_due_date:
-                if r.feeds_due_date < today:
-                    r.feeds_status = 'overdue'
-                else:
-                    r.feeds_status = 'due'
+                r.feeds_status = 'overdue' if r.feeds_due_date < today else 'due'
             else:
-                r.feeds_status = None  # no feeds issued
-    
-    return render(request, 'manager/requests.html', {
-        'pending_requests': pending_requests,
-        'approved_requests': approved_requests,
+                r.feeds_status = None
+
+    # ---------- Build batch JSON (prefer model.age_days; fallback to recorded_on) ----------
+    def to_date(d):
+        if d is None:
+            return None
+        try:
+            return d.date() if hasattr(d, 'hour') else d
+        except Exception:
+            return None
+
+    # Pull age_days directly from the model to avoid any drift
+    batches = (ChickStock.objects
+               .filter(quantity__gt=0)
+               .values('id', 'chick_type', 'quantity', 'recorded_on', 'age_days')
+               .order_by('chick_type', 'recorded_on', 'id'))
+
+    batch_map = {}
+    for b in batches:
+        rec_date = to_date(b.get('recorded_on'))
+        # Use stored age_days if present; otherwise compute from recorded_on
+        if b.get('age_days') is not None:
+            age_days = int(b['age_days'])
+        else:
+            today_local = timezone.localdate()
+            age_days = (today_local - rec_date).days if rec_date else None
+
+        batch_map.setdefault(b['chick_type'], []).append({
+            'id': b['id'],
+            'chick_type': b['chick_type'],
+            'quantity': b['quantity'],
+            'recorded_on': rec_date.isoformat() if rec_date else None,
+            'age_days': age_days,
+        })
+
+    batch_json = mark_safe(json.dumps(batch_map, cls=DjangoJSONEncoder))
+
+    context = {
+        'pending_requests': pending_qs,
+        'approved_requests': approved_qs,
         'history_requests': history_requests,
-    })
+        'active_tab': tab,
+        'q': q,
+        'batch_json': batch_json,
+    }
+    return render(request, 'manager/requests.html', context)
 
+@login_required
 def approve_reject_request(request, request_id):
-    chick_request = get_object_or_404(ChickRequest, id=request_id)
+    """
+    Approve/Reject a ChickRequest.
+    - Stores manager decision metadata (decision_note/by/at) for both actions.
+    - On approve: validates explicit batch allocations and decrements stock atomically.
+    """
+    req = get_object_or_404(ChickRequest, id=request_id)
 
-    if request.method == 'POST':
-        action = request.POST.get('action')
-        if action == 'approve':
-            requested_type = chick_request.chick_type
-            requested_qty = chick_request.quantity
+    if request.method != 'POST':
+        return redirect('review_chick_requests')
 
-            # Total available stock for that chick type
-            total_stock = ChickStock.objects.filter(chick_type=requested_type).aggregate(total=Sum('quantity'))['total'] or 0
+    action = request.POST.get('action')
+    decision_note = (request.POST.get('decision_note') or '').strip()
 
-            if requested_qty > total_stock:
-                messages.error(request, f"Insufficient stock for {requested_type.replace('_',' ').title()}. Requested: {requested_qty}, Available: {total_stock}")
-                return redirect('review_chick_requests')
-            
-            # Deduct from oldest stock records first (FIFO)
-            # remaining = requested_qty
-            # stock_entries = ChickStock.objects.filter(chick_type=requested_type, quantity__gt=0).order_by('recorded_on')
+    # ---------- REJECT ----------
+    if action == 'reject':
+        req.status = 'rejected'  # matches STATUS_CHOICES
+        update_fields = ['status']
 
-            # for stock in stock_entries:
-            #     if remaining == 0:
-            #         break
-            #     if stock.quantity <= remaining:
-            #         remaining -= stock.quantity
-            #         stock.quantity = 0
-            #     else:
-            #         stock.quantity -= remaining
-            #         remaining = 0
-            #     stock.save()
+        # Save decision note if the field exists; otherwise fall back to `notes`
+        if hasattr(req, 'decision_note'):
+            req.decision_note = decision_note or None
+            update_fields.append('decision_note')
+        elif decision_note and hasattr(req, 'notes'):
+            req.notes = decision_note
+            update_fields.append('notes')
 
-            # Now approve the request    
-            chick_request.status = 'approved'
-            messages.success(request, f"Request No.{chick_request.id} of {chick_request.chick_type} approved!")
-        elif action == 'reject':
-            chick_request.status = 'rejected'
-            messages.warning(request, f"Request #{chick_request.id} rejected")
+        # Optional metadata if these fields exist on your model
+        if hasattr(req, 'decision_by'):
+            req.decision_by = request.user if request.user.is_authenticated else None
+            update_fields.append('decision_by')
 
-        chick_request.approval_date = date.today()
-        #chick_request.approved_by = request.user
-        from home.models import User # Remove this line and the two belwo it after designing the login page. Then uncomment the one above
-        default_manager = User.objects.get(username='peter')
-        chick_request.approved_by = default_manager
-        chick_request.save()
+        if hasattr(req, 'decision_at'):
+            req.decision_at = timezone.now()
+            update_fields.append('decision_at')
 
-    return redirect('review_chick_requests')
+        req.save(update_fields=list(set(update_fields)))
+        messages.warning(
+            request,
+            f"Request #REQ{req.id} rejected" + (f": {decision_note}" if decision_note else "")
+        )
+    return redirect('/manager/requests/?tab=pending')
+
+
+    # Must be approve from here on
+    if action != 'approve':
+        messages.error(request, 'Invalid action.')
+        return redirect('/manager/requests/?tab=pending')
+
+    # ---------- APPROVE WITH EXPLICIT ALLOCATIONS ----------
+    requested_type = req.chick_type
+    requested_qty  = req.quantity
+
+    # allocations[] entries come as "<stock_id>:<qty>"
+    raw_allocs = request.POST.getlist('allocations[]')
+    parsed = []
+    total_alloc = 0
+    for item in raw_allocs:
+        try:
+            sid_str, q_str = item.split(':', 1)
+            sid = int(sid_str)
+            q = int(q_str)
+            if q > 0:
+                parsed.append((sid, q))
+                total_alloc += q
+        except Exception:
+            # ignore any malformed items
+            pass
+
+    if total_alloc != requested_qty or not parsed:
+        messages.error(
+            request,
+            f"Allocation mismatch. You allocated {total_alloc} chicks, but the request needs {requested_qty}."
+        )
+        return redirect('/manager/requests/?tab=pending')
+
+    # Optional max age gate
+    max_age_days = request.POST.get('max_age_days')
+    try:
+        max_age_days = int(max_age_days) if max_age_days else None
+    except ValueError:
+        max_age_days = None
+
+    date_field = 'recorded_on'  # adjust if your stock age comes from a different field
+    today = timezone.localdate()
+
+    with transaction.atomic():
+        # Type-level availability check
+        available = (ChickStock.objects
+                     .filter(chick_type=requested_type, quantity__gt=0)
+                     .aggregate(total=Sum('quantity'))['total'] or 0)
+        if requested_qty > available:
+            messages.error(
+                request,
+                f"Insufficient stock for {requested_type.replace('_',' ').title()}. "
+                f"Requested: {requested_qty}, Available: {available}"
+            )
+            transaction.set_rollback(True)
+            return redirect('/manager/requests/?tab=pending')
+
+        # Validate each batch and decrement
+        for stock_id, qty in parsed:
+            stock = (ChickStock.objects
+                     .select_for_update()
+                     .filter(id=stock_id, chick_type=requested_type)
+                     .first())
+            if not stock:
+                messages.error(request, f"Selected stock #{stock_id} not found for {requested_type}.")
+                transaction.set_rollback(True)
+                return redirect('/manager/requests/?tab=pending')
+
+            if stock.quantity < qty:
+                messages.error(
+                    request,
+                    f"Stock #{stock.id} has only {stock.quantity} chicks; you allocated {qty}."
+                )
+                transaction.set_rollback(True)
+                return redirect('/manager/requests/?tab=pending')
+
+            # Age check (supports date or datetime on recorded_on)
+            stock_date = getattr(stock, date_field, None)
+            if max_age_days is not None and stock_date:
+                stock_d = stock_date if hasattr(stock_date, 'year') and not hasattr(stock_date, 'hour') else stock_date.date()
+                age_days = (today - stock_d).days
+                if age_days > max_age_days:
+                    messages.error(
+                        request,
+                        f"Stock #{stock.id} is {age_days} days old (> {max_age_days} days)."
+                    )
+                    transaction.set_rollback(True)
+                    return redirect('/manager/requests/?tab=pending')
+
+            # Decrement and record allocation
+            stock.quantity -= qty
+            stock.save(update_fields=['quantity'])
+            ChickAllocation.objects.create(request=req, stock=stock, quantity=qty)
+
+        # Mark approved + approval metadata + decision metadata
+        req.status = 'approved'
+        req.approval_date = today
+        req.approved_by = request.user if request.user.is_authenticated else None
+        req.save(update_fields=[
+            'status', 'approval_date', 'approved_by',
+            'decision_note', 'decision_by', 'decision_at'
+        ])
+
+    messages.success(
+        request,
+        f"Approved REQ{req.id} with batch allocations "
+        f"({len(parsed)} batch{'es' if len(parsed)!=1 else ''})."
+    )
+    return redirect('/manager/requests/?tab=pending')
+
+@login_required
+def reject_request(request, pk=None):
+    # Support both routes:
+    # - /requests/<pk>/reject/  (pk in path)
+    # - /requests/reject/       (id in POST: request_id)
+    if request.method != "POST":
+        return redirect(f"{reverse('review_chick_requests')}?tab=pending")
+
+    target_id = pk or request.POST.get("request_id")
+    req = get_object_or_404(ChickRequest, pk=target_id)
+
+    reason = (request.POST.get("rejection_reason")
+              or request.POST.get("decision_note")
+              or "").strip()
+
+    # Use your model's existing fields
+    req.status = "rejected"
+
+    # Save the manager reason into notes (append if rep already wrote something)
+    if reason:
+        if req.notes:
+            req.notes = f"{req.notes}\n\n[Manager rejection] {reason}"
+        else:
+            req.notes = reason
+
+    # If you want to track who rejected / when and such fields exist, they’ll be set
+    if hasattr(req, "approved_by") and req.approved_by is None and request.user.is_authenticated:
+        # not required, but safe if you want something in there
+        pass
+
+    # Persist
+    if reason:
+        req.save(update_fields=["status", "notes"])
+    else:
+        req.save(update_fields=["status"])
+
+    messages.warning(request, f"Request #REQ{req.id} rejected" + (f": {reason}" if reason else ""))
+
+    return redirect(f"{reverse('review_chick_requests')}?tab=pending")
+
+
+
 
 #=================================================
 # 3) FEEDS (STOCK, DISTRIBUTION & FEED SOURCES)
 #=================================================
 
+@login_required
 def feeds_view(request):
     manufacturers = Manufacturer.objects.all()
     suppliers = Supplier.objects.all()
@@ -283,25 +677,7 @@ def feeds_view(request):
     
     return render(request, 'manager/feeds.html', context)
 
-# from sales.models import FeedDistribution
-# from django.db.models import Q
-
-# def distribute_feeds_view(request):
-#     query = request.GET.get('q')
-#     feed_distributions = FeedDistribution.objects.select_related('farmer', 'feed_stock', 'recorded_by')
-
-#     if query:
-#         feed_distributions = feed_distributions.filter(
-#             Q(farmer__name__icontains=query) |
-#             Q(feed_stock__feed_type__icontains=query)
-#         )
-
-#     return render(request, 'manager/partials/distribute_feeds.html', {
-#         'distributions': feed_distributions
-#     })
-
-
-# We are using this view to manage the feed suppliers and feed manufacturers
+@login_required
 def manage_feed_sources(request):
     if request.method == 'POST':
         if 'add_manufacturer' in request.POST:
@@ -326,7 +702,7 @@ def manage_feed_sources(request):
     })
 
 # View to handle displaying the form and saving feed_stock on post
-#@login_required
+@login_required
 def add_feed_stock(request):
     manufacturers = Manufacturer.objects.all()
     suppliers = Supplier.objects.all()
@@ -368,16 +744,18 @@ def add_feed_stock(request):
 
     return redirect('manager_feeds')
 
-
+@login_required
 def add_manufacturer(request):
     if request.method == 'POST':
         name = (request.POST.get('name') or '').strip()
-        contact = (request.POST.get('contact') or '').strip()
+        contact_person = (request.POST.get('contact_person') or '').strip()
+        phone_number = (request.POST.get('phone_number') or '').strip()
         location = (request.POST.get('location') or '').strip()
         if name:
             Manufacturer.objects.create(
                 name=name,
-                contact=contact,
+                contact_person = contact_person,
+                phone_number = phone_number,
                 location=location,
                 )
             messages.success(request, f"Manufacturer '{name}' added successfully.")
@@ -414,21 +792,7 @@ def delete_supplier(request, pk):
     return redirect('manager_feeds')
 
 
-# def distribute_feeds(request):
-#     query = request.GET.get('q')
-#     feed_distributions = FeedDistribution.objects.select_related('farmer', 'feed_stock', 'recorded_by')
-
-#     if query:
-#         feed_distributions = feed_distributions.filter(
-#             Q(farmer__name__icontains=query) |
-#             Q(feed_stock__feed_type__icontains=query)
-#         )
-
-#     return render(request, 'manager/partials/distribute_feeds.html', {
-#         'distributions': feed_distributions
-#     })
-
-#@login_required
+@login_required
 def feed_stock_history(request):
     feed_stocks = FeedStock.objects.select_related('manufacturer', 'supplier').order_by('-arrival_date')
     return render(request, 'manager/partials/feed_history.html', {
@@ -439,10 +803,9 @@ def feed_stock_history(request):
 #=======================================================
 # FEED REQUEST APPROVAL (MANAGER)
 #=======================================================
-#@login_required
 # --- FEED REQUESTS (Manager) ---
 
-
+@login_required
 def review_feed_requests(request):
     pending = (FeedRequest.objects
                .filter(status='pending')
@@ -470,7 +833,7 @@ def review_feed_requests(request):
         'all_requests': all_requests,
     })
 
-
+@login_required
 def approve_reject_feed_request(request, request_id):
     feed_request = get_object_or_404(FeedRequest, id=request_id)
 
@@ -505,9 +868,26 @@ def approve_reject_feed_request(request, request_id):
 #==============================================
 # FARMERS ON THE MANAGER SIDE
 #==============================================
+@login_required
 def farmers_view(request):
-    farmers = Farmer.objects.all().order_by('name')
-    return render(request, 'manager/farmers.html', {'farmers': farmers})
+    q = (request.GET.get("q") or "").strip()
+
+    farmers = Farmer.objects.all()
+    if q:
+        farmers = farmers.filter(
+            Q(name__icontains=q) |
+            Q(nin__icontains=q) |
+            Q(recommender__icontains=q) |
+            Q(recommender_nin__icontains=q) |
+            Q(contact__icontains=q)
+        )
+    farmers = farmers.order_by('name')
+
+    return render(request, 'manager/farmers.html', {
+        'farmers': farmers,
+        'q': q,                     # so the input keeps its value
+        'results_count': farmers.count(),  # optional: show count
+    })
 
 def farmer_request_history(request, nin):
     farmer = get_object_or_404(Farmer, nin=nin)
@@ -520,13 +900,7 @@ def farmer_request_history(request, nin):
 #==============================================
 # SALES REPORT / PAYMENTS ON THE MANAGER SIDE
 #==============================================
-from datetime import date, timedelta
-from decimal import Decimal
-from django.shortcuts import render
-from django.db.models import Sum
-from sales.models import ChickRequest, FeedDistribution, Payment
-from sales.models import FeedStock  # only for select_related safety
-from manager.models import ChickStock
+
 
 CHICK_PRICE = Decimal('1650')  # fixed price per chick
 
@@ -679,6 +1053,7 @@ def sales_report(request):
 #====================================
 # REGISTER NEW USERS FOR THE SYSTEM
 #====================================
+@login_required
 def register_user(request):
     if request.method == 'POST':
         form_data = request.POST
@@ -722,16 +1097,7 @@ def register_user(request):
 # ANNOUNCEMENTS THAT APPEAR ON THE LANDING PAGE
 #=================================================
 
-# manager/views.py
-from django.shortcuts import render, redirect, get_object_or_404
-from django.utils import timezone
-from django.contrib import messages
-from django.views.decorators.http import require_POST
-# from django.contrib.auth.decorators import login_required
-# from .permissions import manager_required  # if you have one
-from home.models import Announcement, Training, FarmerTip, QuoteOfTheWeek
-
-# @login_required
+@login_required
 # @manager_required
 def announcements_view(request):
     # Handle Quote create/delete posted to this same route

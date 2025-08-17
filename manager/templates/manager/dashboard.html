@@ -3,142 +3,264 @@
 {% block title %}Dashboard | Young4ChickS{% endblock %}
 
 {% block content %}
-<h2>📊 Dashboard</h2>
-<p class="text-muted">Welcome, Brooder Manager! Here's a snapshot of system activity.</p>
+<style>
+  /* Polished compact metric cards */
+  .metric {background:#fff;border:1px solid #e9ecef;border-left:5px solid #dee2e6;border-radius:.6rem;padding:1rem 1.1rem;box-shadow:0 2px 6px rgba(16,24,40,.05);height:100%;}
+  .metric h6{margin:0 0 .35rem 0;font-size:.9rem;text-transform:uppercase;letter-spacing:.03em;color:#5c6773}
+  .metric .val{margin:0;line-height:1.05;font-weight:800;font-size:1.6rem}
+  .metric small{display:block;margin-top:.25rem;color:#6c757d}
+  .accent-primary{border-left-color:#007bff}.accent-success{border-left-color:#28a745}.accent-warning{border-left-color:#ffc107}
+  .accent-info{border-left-color:#17a2b8}.accent-secondary{border-left-color:#6c757d}.accent-danger{border-left-color:#dc3545}
+  .mini-list{margin:.35rem 0 0;padding-left:1.1rem;font-size:.95rem;color:#5f6b76}
+  .mini-list li{margin:.15rem 0}
+  .section-title{font-size:1rem;font-weight:700;color:#3d4650;margin:.25rem 0 .6rem}
+  .text-mono{font-variant-numeric:tabular-nums}
+  /* Grid tightening for 3-up without feeling cramped */
+  @media (min-width: 992px){.row-tight>[class^="col-"]{margin-bottom:1rem}}
+</style>
 
-<!-- Row 1: Sales Overview -->
-<div class="row mt-4">
-  <div class="col-md-4">
-    <div class="card-summary border-left-success">
+{% if messages %}
+  <div class="container mt-3">
+    {% for message in messages %}
+      <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+        <strong>{{ message }}</strong>
+        
+      </div>
+    {% endfor %}
+  </div>
+{% endif %}
+
+
+<h2 class="mb-2">📊 Manager Dashboard</h2>
+<p class="text-muted">Key stats at a glance — sales, revenue, stock, and activity.</p>
+
+<!-- ROW A: Totals and Week (3 columns) -->
+<div class="row row-tight">
+  <div class="col-lg-4 col-md-6 mb-3">
+    <div class="metric accent-success">
       <h6>Total Chicks Sold</h6>
-      <h3>{{ total_chicks_sold }}</h3>
+      <div class="val text-mono">{{ total_chicks_sold|default:0|intcomma }}</div>
+      <ul class="mini-list">
+        <li>Broiler (Local): <strong>{{ chicks_sold_by_type.broiler_local|default:0|intcomma }}</strong></li>
+        <li>Broiler (Exotic): <strong>{{ chicks_sold_by_type.broiler_exotic|default:0|intcomma }}</strong></li>
+        <li>Layer (Local): <strong>{{ chicks_sold_by_type.layer_local|default:0|intcomma }}</strong></li>
+        <li>Layer (Exotic): <strong>{{ chicks_sold_by_type.layer_exotic|default:0|intcomma }}</strong></li>
+      </ul>
     </div>
   </div>
-  <div class="col-md-4">
-    <div class="card-summary border-left-primary">
+  <div class="col-lg-4 col-md-6 mb-3">
+    <div class="metric accent-primary">
       <h6>Total Revenue</h6>
-      <h3>UGX {{ total_revenue|intcomma }}</h3>
+      <div class="val text-mono">UGX {{ total_revenue|default:0|floatformat:0|intcomma }}</div>
+      <ul class="mini-list">
+        <li>Chicks: <strong>UGX {{ total_revenue_breakdown.chicks|default:0|floatformat:0|intcomma }}</strong></li>
+        <li>Feeds: <strong>UGX {{ total_revenue_breakdown.feeds|default:0|floatformat:0|intcomma }}</strong></li>
+      </ul>
     </div>
   </div>
-  <div class="col-md-4">
-    <div class="card-summary border-left-info">
-      <h6>Chicks Sold This Week</h6>
-      <h3>{{ chicks_this_week }}</h3>
-    </div>
-  </div>
-</div>
-
-<!-- Row 2: Revenue and Stock -->
-<div class="row">
-  <div class="col-md-4">
-    <div class="card-summary border-left-warning">
+  <div class="col-lg-4 col-md-6 mb-3">
+    <div class="metric accent-warning">
       <h6>Revenue This Week</h6>
-      <h3>UGX {{ revenue_this_week|intcomma }}</h3>
-    </div>
-  </div>
-  <div class="col-md-4">
-    <div class="card-summary border-left-secondary">
-      <h6>Pending Requests</h6>
-      <h3>{{ pending_requests }}</h3>
-    </div>
-  </div>
-  <div class="col-md-4">
-    <div class="card-summary border-left-danger">
-      <h6>Total Remaining Stock</h6>
-      <h3>{{ total_remaining_stock }}</h3>
+      <div class="val text-mono">UGX {{ revenue_this_week|default:0|floatformat:0|intcomma }}</div>
+      <ul class="mini-list">
+        <li>Chicks: <strong>UGX {{ revenue_week_breakdown.chicks|default:0|floatformat:0|intcomma }}</strong></li>
+        <li>Feeds: <strong>UGX {{ revenue_week_breakdown.feeds|default:0|floatformat:0|intcomma }}</strong></li>
+      </ul>
     </div>
   </div>
 </div>
 
-<!-- Row 3: Chick Types -->
-<div class="row">
-  <div class="col-md-4">
-    <div class="card-summary border-left-dark">
-      <h6>Broiler - Local In Stock</h6>
-      <h3>{{ stock_dict.broiler_local|default:"0" }}</h3>
+<!-- ROW B: Weekly Chicks + Requests/Farmers + Feed Stock -->
+<div class="row row-tight">
+  <div class="col-lg-4 col-md-6 mb-3">
+    <div class="metric accent-info">
+      <h6>Chicks Sold This Week</h6>
+      <div class="val text-mono">{{ chicks_this_week|default:0|intcomma }}</div>
+      <ul class="mini-list">
+        <li>Broiler (Local): <strong>{{ chicks_week_by_type.broiler_local|default:0|intcomma }}</strong></li>
+        <li>Broiler (Exotic): <strong>{{ chicks_week_by_type.broiler_exotic|default:0|intcomma }}</strong></li>
+        <li>Layer (Local): <strong>{{ chicks_week_by_type.layer_local|default:0|intcomma }}</strong></li>
+        <li>Layer (Exotic): <strong>{{ chicks_week_by_type.layer_exotic|default:0|intcomma }}</strong></li>
+      </ul>
     </div>
   </div>
-  <div class="col-md-4">
-    <div class="card-summary border-left-dark">
-      <h6>Broiler - Exotic In Stock</h6>
-      <h3>{{ stock_dict.broiler_exotic|default:"0" }}</h3>
+  <div class="col-lg-4 col-md-6 mb-3">
+    <div class="metric accent-secondary">
+      <h6>Requests & Farmers</h6>
+      <div class="val text-mono">{{ pending_requests|default:0|intcomma }} <small class="text-muted">pending</small></div>
+      <ul class="mini-list">
+        <li>Registered Farmers: <strong>{{ total_farmers|default:0|intcomma }}</strong></li>
+        <li>Approved This Month: <strong>{{ approved_this_month|default:0|intcomma }}</strong></li>
+      </ul>
     </div>
   </div>
-  <div class="col-md-4">
-    <div class="card-summary border-left-dark">
-      <h6>Layer - Local In Stock</h6>
-      <h3>{{ stock_dict.layer_local|default:"0" }}</h3>
-    </div>
-  </div>
-</div>
-<div class="row">
-  <div class="col-md-4">
-    <div class="card-summary border-left-dark">
-      <h6>Layer - Exotic In Stock</h6>
-      <h3>{{ stock_dict.layer_exotic|default:"0" }}</h3>
-    </div>
-  </div>
-</div>
-
-<!-- Row 4: System Stats -->
-<div class="row">
-  <div class="col-md-4">
-    <div class="card-summary border-left-secondary">
-      <h6>Registered Farmers</h6>
-      <h3>{{ total_farmers }}</h3>
-    </div>
-  </div>
-  <div class="col-md-4">
-    <div class="card-summary border-left-info">
-      <h6>Approved This Month</h6>
-      <h3>{{ approved_this_month }}</h3>
-    </div>
-  </div>
-  <div class="col-md-4">
-    <div class="card-summary border-left-warning">
-      <h6>Total Feed Stock (Bags)</h6>
-      <h3>{{ total_feed_stock }}</h3>
+  <div class="col-lg-4 col-md-6 mb-3">
+    <div class="metric accent-danger">
+      <h6>Feed Stock (Bags)</h6>
+      <div class="val text-mono">{{ total_feed_stock|default:0|intcomma }}</div>
+      <ul class="mini-list">
+        <li>Starter: <strong>{{ feed_stock_by_type.starter|default:0|intcomma }}</strong></li>
+        <li>Grower: <strong>{{ feed_stock_by_type.grower|default:0|intcomma }}</strong></li>
+        <li>Finisher: <strong>{{ feed_stock_by_type.finisher|default:0|intcomma }}</strong></li>
+      </ul>
     </div>
   </div>
 </div>
 
-<!-- Row 5: Chart + Recent Activity + Events -->
-<div class="row mt-4">
-  <div class="col-md-6">
-    <div class="card p-3 mb-4">
-      <h5 class="card-title">📈 Sales Overview Chart</h5>
-      <div id="chart-placeholder" style="height: 200px; background-color: #f1f1f1; border-radius: 6px;">
-        <!-- Chart will be embedded here later -->
+<!-- ROW C: Chick Stock by Type + Events -->
+<div class="row row-tight">
+  <div class="col-lg-8 mb-3">
+    <div class="metric">
+      <div class="section-title">Total Remaining Chick Stock</div>
+      <div class="val text-mono" style="margin-bottom:.5rem">{{ total_remaining_stock|default:0|intcomma }}</div>
+      <div class="row">
+        <div class="col-6 col-md-3 mb-2">
+          <div class="metric accent-secondary">
+            <h6>Broiler Local</h6>
+            <div class="val text-mono">{{ stock_dict.broiler_local|default:0|intcomma }}</div>
+          </div>
+        </div>
+        <div class="col-6 col-md-3 mb-2">
+          <div class="metric accent-secondary">
+            <h6>Broiler Exotic</h6>
+            <div class="val text-mono">{{ stock_dict.broiler_exotic|default:0|intcomma }}</div>
+          </div>
+        </div>
+        <div class="col-6 col-md-3 mb-2">
+          <div class="metric accent-secondary">
+            <h6>Layer Local</h6>
+            <div class="val text-mono">{{ stock_dict.layer_local|default:0|intcomma }}</div>
+          </div>
+        </div>
+        <div class="col-6 col-md-3 mb-2">
+          <div class="metric accent-secondary">
+            <h6>Layer Exotic</h6>
+            <div class="val text-mono">{{ stock_dict.layer_exotic|default:0|intcomma }}</div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
 
-  <div class="col-md-6">
-    <div class="card p-3 mb-4">
-      <h5 class="card-title">🔄 Recent Activity</h5>
-      <ul class="activity-feed">
-        <li>✅ Approved 100 chicks for Jane Atwine</li>
-        <li>📦 Added 200 Layer chicks to stock</li>
-        <li>❌ Rejected Kato Yusuf’s request – Exceeded limit</li>
-        <li>✅ Marked 150 chicks as collected by M. Kizza</li>
-        <li>📢 Posted announcement: Next delivery on July 15</li>
-      </ul>
+  <div class="col-lg-4 mb-3">
+    <div class="metric accent-primary">
+      <div class="section-title">Upcoming Trainings</div>
+      {% if upcoming_trainings %}
+        <ul class="mini-list" style="margin:0">
+          {% for t in upcoming_trainings %}
+            <li><strong>{{ t.date|date:"M d" }}</strong> — {{ t.title }}{% if t.location %} · {{ t.location }}{% endif %}</li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <small class="text-muted">No upcoming trainings listed.</small>
+      {% endif %}
     </div>
   </div>
 </div>
 
-<div class="row mb-4">
-  <div class="col-md-12">
-    <div class="card p-3">
-      <h5 class="card-title">📅 Upcoming Events</h5>
-      <ul class="list-group list-group-flush">
-        <li class="list-group-item">🗓️ Training – Brooding Basics, July 20</li>
-        <li class="list-group-item">🗓️ Feed Collection – July 25</li>
-        <li class="list-group-item">🗓️ Vaccination Reminder – Aug 1</li>
+<!-- ROW D: Operational alerts & quick links (fills lower space cleanly) -->
+<div class="row row-tight">
+  <div class="col-lg-4 col-md-6 mb-3">
+    <div class="metric accent-warning">
+      <h6>Operational Alerts</h6>
+      <ul class="mini-list">
+        <li>Feeds expiring in 14 days: <strong>{{ soon_expiring_feeds|default:0|intcomma }}</strong></li>
+        <li>Feed payments due in 7 days: <strong>{{ feeds_due_soon|default:0|intcomma }}</strong></li>
+        <li>Unpicked approvals > 3 days: <strong>{{ alerts.counts.unpicked_over_3d|default:0|intcomma }}</strong></li>
+        <li>Pending requests > 48h: <strong>{{ alerts.counts.pending_over_48h|default:0|intcomma }}</strong></li>
+        <li>Low chick stock types: <strong>{{ alerts.counts.low_chick_types|default:0 }}</strong></li>
       </ul>
+      
+      {% if alerts.low_chick_stock %}
+      <div class="section-title" style="margin-top:.25rem">Low Chick Stock</div>
+      <ul class="mini-list">
+        {% for it in alerts.low_chick_stock %}
+          <li>{{ it.type|cut:"_"|title }}: <strong>{{ it.qty|intcomma }}</strong> left</li>
+        {% endfor %}
+      </ul>
+      {% endif %}
+
+      {% if alerts.unpicked_approvals %}
+      <div class="section-title">Unpicked Approvals</div>
+      <ul class="mini-list">
+        {% for r in alerts.unpicked_approvals %}
+          <li>REQ{{ r.id }} — {{ r.farmer }} ({{ r.days }}d)</li>
+        {% endfor %}
+      </ul>
+      {% endif %}
+
+      {% if alerts.pending_stale %}
+      <div class="section-title">Pending > 48h</div>
+      <ul class="mini-list">
+        {% for r in alerts.pending_stale %}
+          <li>REQ{{ r.id }} — {{ r.farmer }} ({{ r.days }}h)</li>
+        {% endfor %}
+      </ul>
+      {% endif %}
+
+      {% if alerts.feed_expiring %}
+      <div class="section-title">Feeds Expiring Soon</div>
+      <ul class="mini-list">
+        {% for f in alerts.feed_expiring %}
+          <li>{{ f.feed_type|capfirst }} — {{ f.bags|intcomma }} bags ({{ f.expiry|date:"M d" }})</li>
+        {% endfor %}
+      </ul>
+      {% endif %}
+
+      {% if alerts.feed_due_soon %}
+      <div class="section-title">Feed Dues (≤7 days)</div>
+      <ul class="mini-list">
+        {% for d in alerts.feed_due_soon %}
+          <li>{{ d.farmer }} — {{ d.bags|intcomma }} bag{{ d.bags|pluralize }} ({{ d.due|date:"M d" }})</li>
+        {% endfor %}
+      </ul>
+      {% endif %}
+    </div>
+  </div>
+  <div class="col-lg-4 col-md-6 mb-3">
+    <div class="metric">
+      <h6>Shortcuts</h6>
+      <ul class="mini-list" style="list-style:none;padding-left:0">
+        <li>→ <a href="{% url 'manager_chick_stock' %}">Manage Chick Stock</a></li>
+        <li>→ <a href="{% url 'review_chick_requests' %}">Review Chick Requests</a></li>
+        <li>→ <a href="{% url 'review_feed_request' %}">Review Feed Requests</a></li>
+        <li>→ <a href="{% url 'manager_announcements' %}">Post Announcement</a></li>
+      </ul>
+    </div>
+  </div>
+  <div class="col-lg-4 col-md-12 mb-3">
+    <div class="metric">
+      <h6>Last 5 Chick Approvals</h6>
+      <div class="table-responsive">
+        <table class="table table-sm table-bordered mb-0">
+          <thead class="thead-light">
+            <tr>
+              <th>#</th>
+              <th>Farmer</th>
+              <th>Type</th>
+              <th>Qty</th>
+              <th>Approved</th>
+              <th>Picked</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for r in last_approvals %}
+            <tr>
+              <td>REQ{{ r.id }}</td>
+              <td>{{ r.farmer.name }}</td>
+              <td>{{ r.chick_type|cut:"_"|title }}</td>
+              <td>{{ r.quantity|intcomma }}</td>
+              <td>{{ r.approval_date|date:"M d" }}</td>
+              <td>{% if r.is_picked %}<span class="badge badge-primary">Yes</span>{% else %}<span class="badge badge-secondary">No</span>{% endif %}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="6" class="text-center text-muted">No approvals yet.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
     </div>
   </div>
 </div>
 
-<p class="text-muted mt-5">Use the sidebar to navigate through the system. You can add stock, approve requests, and more.</p>
 {% endblock %}

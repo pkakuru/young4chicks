@@ -67,49 +67,51 @@
   <div class="table-responsive">
     <table class="table table-sm table-bordered table-hover mb-0">
       <thead class="thead-light">
-        <tr>
-          <th>#</th>
-          <th>Farmer</th>
-          <th>Chick Type</th>
-          <th>Quantity</th>
-          <th>Status</th>
-          <th>Pickup Status</th>
-          <th>Submitted On</th>
-          <th>Notes</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for request in all_requests %}
-        <tr>
-          <td>{{ forloop.counter }}</td>
-          <td>{{ request.farmer.name }}</td>
-          <td>{{ request.chick_type|cut:"_"|title }}</td>
-          <td>{{ request.quantity }}</td>
-          <td>
-            {% if request.status == 'approved' %}
-            <span class="badge badge-success">Approved</span>
-            {% elif request.status == 'pending' %}
-            <span class="badge badge-warning text-dark">Pending</span>
-            {% else %}
-            <span class="badge badge-danger">Rejected</span>
-            {% endif %}
-          </td>
-          <td>
-            {% if request.is_picked %}
-            <span class="badge badge-primary">Picked</span>
-            {% else %}
-            <span class="badge badge-secondary">Not Picked</span>
-            {% endif %}
-          </td>
-          <td>{{ request.submitted_on }}</td>
-          <td>{{ request.notes|default:"-" }}</td>
-        </tr>
-        {% empty %}
-        <tr>
-          <td colspan="7" class="text-center text-muted">No requests submitted yet.</td>
-        </tr>
-        {% endfor %}
-      </tbody>
+  <tr>
+    <th>#</th>
+    <th>Farmer</th>
+    <th>Chick Type</th>
+    <th>Quantity</th>
+    <th>Status</th>
+    <th>Pickup Status</th>
+    <th>Submitted On</th>
+    <th>Notes (Sales)</th>
+    <th>Decision Note (Manager)</th>
+  </tr>
+</thead>
+<tbody>
+  {% for request in all_requests %}
+  <tr>
+    <td>{{ forloop.counter }}</td>
+    <td>{{ request.farmer.name }}</td>
+    <td>{{ request.chick_type|cut:"_"|title }}</td>
+    <td>{{ request.quantity }}</td>
+    <td>
+      {% if request.status == 'approved' %}
+        <span class="badge badge-success badge-fixed">Approved</span>
+      {% elif request.status == 'pending' %}
+        <span class="badge badge-warning text-dark badge-fixed">Pending</span>
+      {% else %}
+        <span class="badge badge-danger badge-fixed">Rejected</span>
+      {% endif %}
+    </td>
+    <td>
+      {% if request.is_picked %}
+        <span class="badge badge-primary badge-fixed">Picked</span>
+      {% else %}
+        <span class="badge badge-secondary badge-fixed">Not Picked</span>
+      {% endif %}
+    </td>
+    <td>{{ request.submitted_on }}</td>
+    <td>{{ request.notes|default:"-" }}</td>
+    <td>{{ request.decision_note|default:"-" }}</td>
+  </tr>
+  {% empty %}
+  <tr>
+    <td colspan="9" class="text-center text-muted">No requests submitted yet.</td>
+  </tr>
+  {% endfor %}
+</tbody>
     </table>
   </div>
 </div>

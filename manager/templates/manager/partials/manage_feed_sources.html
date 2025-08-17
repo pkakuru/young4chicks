@@ -18,7 +18,11 @@
         </div>
         <div class="form-group">
           <label>Contact Person</label>
-          <input type="text" name="contact" class="form-control" placeholder="e.g. John Doe">
+          <input type="text" name="contact_person" class="form-control" placeholder="e.g. John Doe">
+        </div>
+        <div class="form-group">
+          <label>Phone Number</label>
+          <input type="text" name="phone_number" class="form-control" placeholder="e.g. +256 700 123456">
         </div>
         <div class="form-group">
           <label>Location</label>
@@ -74,6 +78,7 @@
               <th>#</th>
               <th>Name</th>
               <th>Contact Person</th>
+              <th>Phone</th>
               <th>Location</th>
               <th>Action</th>
             </tr>
@@ -83,7 +88,8 @@
             <tr>
               <td>{{ forloop.counter }}</td>
               <td>{{ m.name }}</td>
-              <td>{{ m.contact }}</td>
+              <td>{{ m.contact_person }}</td>
+              <td>{{ m.phone_number }}</td>
               <td>{{ m.location }}</td>
               <td>
                 <a href="{% url 'delete_manufacturer' m.id %}" class="btn btn-sm btn-danger" onclick="return confirm('Are you sure you want to delete this manufacturer?');">Delete</a>

@@ -45,11 +45,11 @@
           <td>{{ req.quantity }}</td>
           <td>
             {% if req.status == 'approved' %}
-              <span class="badge badge-success">Approved</span>
+              <span class="badge badge-success badge-fixed">Approved</span>
             {% elif req.status == 'rejected' %}
-              <span class="badge badge-danger">Rejected</span>
+              <span class="badge badge-danger badge-fixed">Rejected</span>
             {% else %}
-              <span class="badge badge-warning text-dark">Pending</span>
+              <span class="badge badge-warning text-dark badge-fixed">Pending</span>
             {% endif %}
           </td>
           <td>{{ req.notes|default:"-" }}</td>

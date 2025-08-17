@@ -42,6 +42,15 @@
       background-color: #495057;
       color: white;
     }
+
+    .badge-fixed {
+    display: inline-block;
+    min-width: 80px;        /* keeps them same width */
+    text-align: center;
+    font-size: 0.85rem;     /* consistent size */
+    padding: 0.4em 0.6em;   /* uniform padding */
+    border-radius: 0.25rem; /* same shape */
+}
     .sidebar-footer {
       padding: 1rem;
       text-align: center;
@@ -67,11 +76,13 @@
       <a href="{% url 'sales_history' %}" class="{% if request.resolver_match.url_name == 'sales_history' %}active{% endif %}">📄 Farmer History</a>
       <a href="{% url 'sales_pickup' %}" class="{% if request.resolver_match.url_name == 'sales_pickup' %}active{% endif %}">✅ Chicks Pickup</a>
       <a href="{% url 'sales_feed_pickup' %}" class="{% if request.resolver_match.url_name == 'sales_feed_pickup' %}active{% endif %}">✅ Feeds Pickup</a>
-      <a href="/" class="text-danger">🚪 Logout</a>
+      <a href="{% url 'logout' %}" class="text-danger">🚪 Logout</a>
     </div>
-    <div class="sidebar-footer">
-      &copy; 2025 Young4ChickS<br>
-      Sales Rep Panel
+    <div class="sidebar-footer">      
+      <strong>Kakuru Peter Bingwa</strong> <br>
+      CSE-Python May 2025 <br>
+      Refactory Academy <br>
+      &copy; 2025 Young4ChickS
     </div>
   </div>
 
@@ -85,6 +96,18 @@
   <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js"></script>
   <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+  <script>
+  setTimeout(function() {
+    var alerts = document.querySelectorAll('.alert');
+    alerts.forEach(function(alert) {
+      alert.classList.remove('show');
+      alert.classList.add('fade');
+      setTimeout(function() {
+        alert.remove();
+      }, 500); // remove after fade out
+    });
+  }, 7000);
+</script>
   {% block scripts %} {% endblock %}
 </body>
 </html>

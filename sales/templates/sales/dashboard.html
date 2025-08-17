@@ -43,20 +43,29 @@
   /* Optional: mono digits for cleaner number alignment */
   .text-mono { font-variant-numeric: tabular-nums; }
 </style>
-
+{% if messages %}
+  <div class="container mt-3">
+    {% for message in messages %}
+      <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+        <strong>{{ message }}</strong>
+        
+      </div>
+    {% endfor %}
+  </div>
+{% endif %}
 
 <div class="row mb-4">
   <div class="col-md-3">
     <div class="card-summary border-left-info">
       <h6>Pending Chick Pickups</h6>
-      <h3>{{ pending_chick_count }} <small class="text-muted">req</small></h3>
+      <h3>{{ pending_chick_count }} <small class="text-muted">requests</small></h3>
       <small class="text-muted">{{ pending_chick_qty }} chicks</small>
     </div>
   </div>
   <div class="col-md-3">
     <div class="card-summary border-left-primary">
       <h6>Pending Feed Pickups</h6>
-      <h3>{{ pending_feed_count }} <small class="text-muted">req</small></h3>
+      <h3>{{ pending_feed_count }} <small class="text-muted">requests</small></h3>
       <small class="text-muted">{{ pending_feed_bags }} bag{{ pending_feed_bags|pluralize }}</small>
     </div>
   </div>

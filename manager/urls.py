@@ -5,7 +5,8 @@ from manager.views import (
     farmer_request_history, feeds_view, sales_report, register_user, 
     add_feed_stock, add_manufacturer, add_supplier, feed_stock_history,
     delete_manufacturer, delete_supplier, review_feed_requests, approve_reject_feed_request,
-    create_announcement, delete_announcement, create_training, delete_training, create_tip, delete_tip
+    create_announcement, delete_announcement, create_training, delete_training, create_tip, delete_tip,
+    reject_request,
     )
 
 
@@ -14,6 +15,8 @@ urlpatterns = [
     path('chick-stock/', chick_stock_view, name='manager_chick_stock'),
     path('requests/', review_chick_requests, name='review_chick_requests'),
     path('requests/<int:request_id>/action/', approve_reject_request, name='approve_reject_request'),
+    path('requests/<int:pk>/reject/', reject_request, name='reject_request'),
+    path('requests/reject/', reject_request, name='reject_request_post'),
     path('farmers/', farmers_view, name='manager_farmers'),
 
     path('feeds/', feeds_view, name='manager_feeds'),

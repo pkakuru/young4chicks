@@ -2,6 +2,7 @@
 <html lang="en">
 
 <head>
+  {% load static %}
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Young4ChickS | Urban Poultry Support</title>
@@ -49,7 +50,7 @@
     .btn-ghost:hover { background: var(--primary); color: #fff; }
 
     /* ANNOUNCEMENT RIBBON */
-    .ribbon { background: linear-gradient(90deg, var(--primary), #8b5cf6, #00c389); color: #fff; border-radius: 12px; padding: .9rem 1.2rem; box-shadow: 0 10px 30px rgba(31,42,68,.12); }
+    .ribbon { background: linear-gradient(90deg, var(--primary), #8b5cf6, #00c389); color: #fff; border-radius: 12px; padding: .9rem 1.2rem; box-shadow: 0 10px 30px rgba(31,42,68,.12); position: relative; z-index: 2; }
     .ribbon .title { font-weight: 700; font-size: .95rem; text-transform: uppercase; letter-spacing: .06em; }
 
     /* SECTIONS */
@@ -87,8 +88,8 @@
           <li class="nav-item"><a class="nav-link" href="#trainings">Trainings</a></li>
           <li class="nav-item"><a class="nav-link" href="#tips">Farmer Tips</a></li>
           <li class="nav-item"><a class="nav-link" href="#quote">Quote</a></li>
-          <li class="nav-item ml-2"><a href="{% url 'manager_dashboard' %}" class="btn btn-sm btn-ghost">Manager</a></li>
-          <li class="nav-item ml-2"><a href="{% url 'sales_dashboard' %}" class="btn btn-sm btn-ghost">Sales Rep</a></li>
+          <li class="nav-item ml-2"><a href="{% url 'login' %}" class="btn btn-sm btn-ghost">Manager</a></li>
+          <li class="nav-item ml-2"><a href="{% url 'login' %}" class="btn btn-sm btn-ghost">Sales Rep</a></li>
         </ul>
       </div>
     </div>
@@ -110,65 +111,58 @@
           </div>
         </div>
         <div class="col-lg-5 text-center">
-          <img src="https://cdn-icons-png.flaticon.com/512/616/616408.png" alt="Chick illustration" class="img-fluid" style="max-height: 260px; opacity:.95;">
+          <img src="{% static 'img/chick-hero.svg' %}" alt="Chick illustration" class="img-fluid" style="max-height: 260px; opacity:.95;">
         </div>
       </div>
     </div>
   </section>
 
-  <div class="container mt-n4">
-    <!-- Announcement ribbon -->
-    <div class="ribbon">
-      {% if latest_announcement %}
-        <div class="d-flex flex-wrap align-items-center">
-          <span class="title mr-3">Latest Announcement</span>
-          <div>
-            <strong>{{ latest_announcement.title }}</strong>
-            <span class="ml-2">{{ latest_announcement.content }}</span>
-            <small class="ml-2" style="opacity:.9;">({{ latest_announcement.posted_on|date:"M d, Y H:i" }})</small>
+  <div class="container mt-4">
+  <!-- Announcement ribbon -->
+  <div class="ribbon">
+    {% if latest_announcement %}
+      <div class="d-flex flex-wrap align-items-start">
+        <span class="title mr-3">Latest Announcement</span>
+        <div>
+          <strong>{{ latest_announcement.title }}</strong>
+          <div class="ml-2 announcement-content">
+            {{ latest_announcement.content|linebreaks|safe }}
           </div>
+          <small class="ml-2" style="opacity:.9;">
+            ({{ latest_announcement.posted_on|date:"M d, Y H:i" }})
+          </small>
         </div>
-      {% else %}
-        <div class="text-center">No announcements at the moment.</div>
-      {% endif %}
-    </div>
+      </div>
+    {% else %}
+      <div class="text-center">No announcements at the moment.</div>
+    {% endif %}
   </div>
+</div>
 
-  <!-- CHECK + QUICK LINKS -->
+
+  <!-- CHECK -->
   <section id="check" class="section">
     <div class="container">
       <div class="row">
-        <div class="col-lg-7 mb-3">
+        <div class="col-lg-12 mb-3">
           <div class="card card-smooth p-4 h-100">
             <div class="d-flex align-items-center mb-3">
               <div class="mr-2" style="font-size:1.4rem">🆔</div>
               <h5 class="mb-0">Check Chick Request Status</h5>
             </div>
             <p class="text-muted mb-3">Enter your <strong>NIN</strong> or <strong>Request ID</strong> to see progress. (Coming right after this redesign!)</p>
-            <form method="GET" action="#">
-              <div class="form-row">
-                <div class="col-12 col-md-8 mb-2 mb-md-0">
-                  <input type="text" class="form-control form-control-lg" name="query" placeholder="NIN or Request ID" required>
-                </div>
-                <div class="col-12 col-md-4">
-                  <button class="btn btn-cta btn-block btn-lg" type="submit">Check Status</button>
-                </div>
-              </div>
-            </form>
-          </div>
-        </div>
-        <div class="col-lg-5">
-          <div class="card card-smooth p-4 h-100">
-            <div class="d-flex align-items-center mb-3">
-              <div class="mr-2" style="font-size:1.4rem">👤</div>
-              <h5 class="mb-0">Staff Login</h5>
-            </div>
-            <p class="text-muted">Are you a <strong>Brooder Manager</strong> or a <strong>Sales Rep</strong>? Access your dashboards:</p>
-            <div class="d-flex flex-wrap">
-              <a href="#" class="btn btn-outline-secondary mr-2 mb-2">Login</a>
-              <a href="{% url 'manager_dashboard' %}" class="btn btn-light border mr-2 mb-2">🐥 Brooder Dashboard</a>
-              <a href="{% url 'sales_dashboard' %}" class="btn btn-light border mb-2">📋 Sales Rep Dashboard</a>
-            </div>
+            <form method="GET" action="{% url 'public_request_status' %}">
+  <div class="form-row">
+    <div class="col-md-9 mb-2">
+      <input type="text" class="form-control form-control-lg" name="nin" placeholder="Enter your NIN" required>
+    </div>
+    <div class="col-md-3">
+      <button class="btn btn-cta btn-lg btn-block">Check Status</button>
+    </div>
+  </div>
+</form>
+
+
           </div>
         </div>
       </div>
@@ -270,7 +264,7 @@
           </div>
         </div>
       </div>
-      <div class="text-center footer mt-3">© {{ now|date:"Y" }} Young4ChickS • Built for Uganda’s urban youth farmers</div>
+      <div class="text-center footer mt-3">© {% now "Y" %} Young4ChickS • Built for Uganda’s urban youth farmers</div>
     </div>
   </footer>
 

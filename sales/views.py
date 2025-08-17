@@ -1,34 +1,25 @@
+# Standard library
+from datetime import date, timedelta, datetime
+from decimal import Decimal
+
+# Django
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
-from sales.models import Farmer, ChickRequest, FeedRequest, FeedDistribution
-from datetime import datetime, date
 from django.core.paginator import Paginator
 from django.utils import timezone
 from django.contrib.auth.decorators import login_required
 from django.urls import reverse
-from home.models import User
-from django.shortcuts import render, get_object_or_404, redirect
-from django.contrib import messages
-from django.utils import timezone
-from datetime import timedelta, date
-from sales.models import ChickRequest, FeedStock, FeedDistribution, Payment, ChickStock
-from decimal import Decimal
-from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib import messages
-from django.utils import timezone
-from datetime import date
-from home.models import User
-from sales.models import FeedRequest, FeedStock, FeedDistribution, Payment
-
-
-
-from datetime import date, timedelta
-from decimal import Decimal
 from django.db.models import Sum
-from django.shortcuts import render
-from sales.models import ChickRequest, FeedRequest, FeedDistribution, Payment, FeedStock
-from manager.models import ChickStock
 
+# Local apps
+from home.models import User  # TODO: drop when auth wiring is complete
+from manager.models import ChickStock
+from sales.models import (
+    Farmer, ChickRequest, FeedRequest, FeedDistribution, FeedStock, Payment
+)
+
+
+@login_required
 def sales_dashboard_view(request):
     today = date.today()
     week_start = today - timedelta(days=today.weekday())
@@ -108,7 +99,7 @@ def sales_dashboard_view(request):
     )
     return render(request, 'sales/dashboard.html', context)
 
-
+@login_required
 def register_farmer(request):
     errors = {}
 
@@ -134,8 +125,8 @@ def register_farmer(request):
         age = today.year - dob_obj.year - ( (today.month, today.day) < (dob_obj.month, dob_obj.day) )
 
         # Check age range
-        if age < 18 or age > 35:
-            messages.error(request, "Farmer must be between 18 and 35 years old.")
+        if age < 18 or age > 30:
+            messages.error(request, "Farmer must be between 18 and 30 years old.")
             return redirect('register_farmer')
         
         # Check if farmer already exists
@@ -165,7 +156,7 @@ def register_farmer(request):
         messages.success(request, f"Farmer {name} registered successfully!")
         return redirect('register_farmer')
     
-    from django.core.paginator import Paginator
+    
     
     # On GET request, render the form
     all_farmers = Farmer.objects.all().order_by('-id')
@@ -244,11 +235,30 @@ def submit_chick_request(request):
             farmer_id = request.POST.get('farmer')
             chick_type = request.POST.get('chick_type')
             quantity = int(request.POST.get('quantity'))
-            notes = request.POST.get('notes', '').strip()
+            notes = (request.POST.get('notes') or '').strip()
 
             farmer = get_object_or_404(Farmer, id=farmer_id)
-            farmer_type = farmer.farmer_type  # Starter or Returning
+            farmer_type = farmer.farmer_type  # starter / returning
 
+            # ---- 4-month rule (use 120 days) ----
+            FOUR_MONTHS = timedelta(days=120)
+            last_req = (ChickRequest.objects
+                        .filter(farmer=farmer)
+                        .order_by('-submitted_on', '-id')
+                        .first())
+
+            if last_req:
+                cutoff = last_req.submitted_on + FOUR_MONTHS
+                today = date.today()
+                if today < cutoff:
+                    messages.error(
+                        request,
+                        f"{farmer.name} last requested on {last_req.submitted_on:%b %d, %Y}. "
+                        f"Next eligible date is {cutoff:%b %d, %Y}."
+                    )
+                    return redirect(reverse('submit_chick_request') + '?tab=chick')
+
+            # ---- quantity caps by farmer type ----
             if farmer_type == 'starter' and quantity > 100:
                 messages.error(request, "Starter farmers can only request up to 100 chicks.")
             elif farmer_type == 'returning' and quantity > 500:
@@ -263,15 +273,13 @@ def submit_chick_request(request):
                 )
                 messages.success(request, f"Request for {quantity} {chick_type} chicks submitted successfully.")
                 return redirect(reverse('submit_chick_request') + '?tab=chick')
-        
-        # We handle the feed request form from here
-        
+
         elif form_type == 'feed_request':
             # Feed Request Handling
             farmer_id = request.POST.get('farmer')
             feed_type = request.POST.get('feed_type')
             quantity_bags = int(request.POST.get('quantity_bags'))
-            approval_notes = request.POST.get('approval_notes', '').strip()
+            approval_notes = (request.POST.get('approval_notes') or '').strip()
 
             farmer = get_object_or_404(Farmer, id=farmer_id)
 
@@ -282,7 +290,7 @@ def submit_chick_request(request):
                 farmer=farmer,
                 feed_type=feed_type,
                 quantity_bags=quantity_bags,
-                #requested_by=request.user, Uncomment this line and delete the one below once ready to implement the users
+                # requested_by=request.user,  # when auth is ready
                 requested_by=default_user,
                 approval_notes=approval_notes,
                 status='pending'
@@ -291,23 +299,17 @@ def submit_chick_request(request):
             return redirect(reverse('submit_chick_request') + '?tab=feed')
 
     all_requests = ChickRequest.objects.all().order_by('-submitted_on')
-    #feed_requests = FeedRequest.objects.filter(requested_by=request.user).order_by('-submitted_on')
-    # Please uncomment the line above and delete the three below when ready to do the login part. I am using this to bypass the login requirement
+
+    # temporary: filter by default user until auth is ready
     from home.models import User
-    default_user = User.objects.get(username = 'peter')
+    default_user = User.objects.get(username='peter')
     feed_requests = FeedRequest.objects.filter(requested_by=default_user).order_by('-submitted_on')
-    
 
     return render(request, 'sales/submit_request.html', {
         'farmers': farmers,
         'all_requests': all_requests,
         'feed_requests': feed_requests,
     })
-
-
-# sales/views.py
-from django.shortcuts import render
-from sales.models import Farmer, ChickRequest, FeedRequest
 
 def history_view(request):
     """
@@ -352,41 +354,6 @@ def pickup_view(request):
     )
     return render(request, 'sales/pickup.html', {'requests': approved_unpicked})
 
-
-
-
-
-# def mark_request_as_picked(request, request_id):
-#     chick_request = get_object_or_404(ChickRequest, id=request_id, status='approved', is_picked=False)
-
-#     if request.method == 'POST':
-#         notes = request.POST.get('pickup_notes', '').strip()
-#         chick_request.is_picked = True
-#         chick_request.picked_on = timezone.now().date()
-#         chick_request.pickup_notes = notes
-#         chick_request.save()
-
-#         messages.success(request, f"Request #{chick_request.id} marked as picked.")
-#         return redirect('sales_pickup')
-
-#     return render(request, 'sales/mark_pickup.html', {'request': chick_request})
-
-
-
-
-# sales/views.py
-from decimal import Decimal
-from datetime import date, timedelta
-from django.utils import timezone
-from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib import messages
-from home.models import User
-from manager.models import ChickStock
-from sales.models import ChickRequest, FeedStock, FeedDistribution, Payment
-
-# --- FIFO pricing helper (keep this one) ---
-from decimal import Decimal
-from sales.models import FeedStock
 
 def peek_fifo_cost(qty_needed, feed_type=None, with_breakdown=False):
     """
@@ -556,16 +523,6 @@ def mark_request_as_picked(request, request_id):
 
 
 
-
-
-from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib import messages
-from django.utils import timezone
-from datetime import date
-from django.db.models import Sum
-from home.models import User  # remove later when auth wired
-from sales.models import FeedRequest, FeedStock, FeedDistribution, Payment
-
 def feed_pickup_view(request):
     """List approved & not picked feed requests for pickup."""
     to_pick = (FeedRequest.objects
@@ -573,9 +530,6 @@ def feed_pickup_view(request):
                .select_related('farmer')
                .order_by('-approved_on'))
     return render(request, 'sales/feed_pickup.html', {'requests': to_pick})
-
-
-
 
 def mark_feed_request_as_picked(request, request_id):
     """Confirm pickup for an approved feed request (extra purchase). Payment required upfront."""

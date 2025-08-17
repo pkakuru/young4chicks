@@ -71,13 +71,24 @@ class ChickRequest(models.Model):
     picked_on = models.DateField(null=True, blank=True)
     pickup_notes = models.TextField(null=True, blank=True)
 
+    decision_note = models.TextField(null=True, blank=True)
+    decision_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='decided_chick_requests'
+    )
+    decision_at = models.DateTimeField(null=True, blank=True)
+
     def __str__(self):
         return f"Request #{self.id} - {self.farmer.name}"
 
 # Manufaturer model   
 class Manufacturer(models.Model):
     name = models.CharField(max_length=100, unique=True)
-    contact = models.CharField(max_length=100, blank=True, null=True)
+    contact_person = models.CharField(max_length=100, blank=True, null=True)
+    phone_number = models.CharField(max_length=20, blank=True, null=True)
     location = models.CharField(max_length=100, blank=True, null=True)
 
     def __str__(self):

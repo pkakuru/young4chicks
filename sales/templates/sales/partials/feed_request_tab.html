@@ -82,19 +82,19 @@
           <td>{{ request.quantity_bags }}</td>
           <td>
             {% if request.status == 'approved' %}
-            <span class="badge badge-success">Approved</span>
+            <span class="badge badge-success badge-fixed">Approved</span>
             {% elif request.status == 'pending' %}
-            <span class="badge badge-warning text-dark">Pending</span>
+            <span class="badge badge-warning text-dark badge-fixed">Pending</span>
             {% else %}
-            <span class="badge badge-danger">Rejected</span>
+            <span class="badge badge-danger badge-fixed">Rejected</span>
             {% endif %}
           </td>
           <td>
       {% if request.pickup_status == 'picked' %}
-        <span class="badge badge-primary">Picked</span>
+        <span class="badge badge-primary badge-fixed">Picked</span>
         <div class="small text-muted">{{ request.picked_on|date:"M d, Y" }}</div>
       {% else %}
-        <span class="badge badge-secondary">Not Picked</span>
+        <span class="badge badge-secondary badge-fixed">Not Picked</span>
       {% endif %}
     </td>
           <td>{{ request.submitted_on }}</td>

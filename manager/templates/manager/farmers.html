@@ -10,7 +10,12 @@
 
       <!-- Search -->
       <div class="form-group mb-4">
-        <input type="text" class="form-control" placeholder="Search by name, NIN, or recommender...">
+        <form method="get" class="form-group mb-4">
+        <input type="text" name="q" class="form-control" placeholder="Search by name, NIN, or recommender..." value="{{ q|default:'' }}">
+        </form>
+        {% if q %}
+          <div class="text-muted mb-2">Showing {{ results_count }} result{{ results_count|pluralize }} for: <strong>{{ q }}</strong></div>
+        {% endif %}
       </div>
 
       <!-- Table -->
@@ -37,7 +42,7 @@
     <td class="align-middle">{{ farmer.age }}</td>
     <td class="align-middle">{{ farmer.gender }}</td>
     <td class="align-middle">{{ farmer.nin }}</td>
-    <td class="align-middle">{{ farmer.recommender_name }} {{ farmer.recommender_nin }}</td>
+    <td class="align-middle">{{ farmer.recommender }} - {{ farmer.recommender_nin }}</td>
     <td class="align-middle">{{ farmer.contact }}</td>
     <td class="align-middle">
       <a href="{% url 'manager_farmer_request_history' farmer.nin %}" class="btn btn-sm btn-outline-primary">

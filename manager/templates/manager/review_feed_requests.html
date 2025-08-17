@@ -230,10 +230,10 @@
               </td>
               <td>
                 {% if r.pickup_status == 'picked' %}
-                <span class="badge badge-primary">Picked</span>
+                <span class="badge badge-primary badge-fixed">Picked</span>
                 <div class="small text-muted">{{ r.picked_on|date:"M d, Y" }}</div>
                 {% else %}
-                <span class="badge badge-secondary">Not Picked</span>
+                <span class="badge badge-secondary badge-fixed">Not Picked</span>
                 {% endif %}
               </td>
               <td>{{ r.submitted_on|date:"M d, Y H:i" }}</td>

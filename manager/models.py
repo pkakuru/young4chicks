@@ -1,4 +1,5 @@
 from django.db import models
+#from sales.models import ChickRequest
 
 class ChickStock(models.Model):
     CHICK_TYPE_CHOICES = (
@@ -16,3 +17,14 @@ class ChickStock(models.Model):
 
     def __str__(self):
         return f"{self.get_chick_type_display()} - {self.quantity} chicks"
+    
+
+class ChickAllocation(models.Model):
+    request = models.ForeignKey('sales.ChickRequest', on_delete=models.CASCADE, related_name='allocations')
+    stock   = models.ForeignKey('ChickStock', on_delete=models.PROTECT, related_name='allocations')
+    quantity = models.PositiveIntegerField()
+
+    allocated_on = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"REQ{self.request_id} ← {self.quantity} from stock #{self.stock_id}"

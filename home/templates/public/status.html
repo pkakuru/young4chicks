@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Request Status | Young4ChickS</title>
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .card-smooth {
+            border: 0;
+            border-radius: 16px;
+            box-shadow: 0 12px 30px rgba(31, 42, 68, .08);
+        }
+
+        .muted {
+            color: #6c7a99;
+        }
+
+        .table thead th {
+            background: #f4f6ff;
+            border-bottom: 0;
+        }
+
+        .pill {
+            font-weight: 600;
+            letter-spacing: .3px;
+        }
+    </style>
+</head>
+
+<body class="bg-light">
+    <div class="container py-4">
+
+        <!-- Search -->
+        <div class="card card-smooth p-4 mb-4">
+            <h4 class="mb-2">🔍 Check Chick or Feed Request Status</h4>
+            <p class="muted mb-3">Enter your <strong>NIN</strong> to view all your requests (pending, approved,
+                rejected, and picked).</p>
+            <form method="get" action="">
+                <div class="form-row">
+                    <div class="col-md-9 mb-2">
+                        <input type="text" name="nin" class="form-control form-control-lg" placeholder="Enter your NIN"
+                            value="{{ nin|default:'' }}" required>
+                    </div>
+                    <div class="col-md-3">
+                        <button class="btn btn-primary btn-lg btn-block">Check Status</button>
+                    </div>
+                </div>
+            </form>
+            {% if messages %}
+            <div class="mt-3">
+                {% for m in messages %}
+                <div class="alert alert-{{ m.tags|default:'info' }} py-2 mb-2">{{ m }}</div>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+
+        {% if farmer %}
+        <!-- Farmer summary (clean layout) -->
+        <div class="card card-smooth p-4 mb-4">
+            <div class="row align-items-center">
+                <div class="col-md-7">
+                    <h5 class="mb-1">👤 {{ farmer.name }}</h5>
+                    <div class="muted">
+                        <span>NIN: <strong>{{ farmer.nin }}</strong></span>
+                        {% if farmer.contact %}<span class="ml-2">• Contact: <strong>{{ farmer.contact
+                                }}</strong></span>{% endif %}
+                    </div>
+                </div>
+                <div class="col-md-5 text-md-right mt-2 mt-md-0">
+                    <div class="d-inline-flex flex-wrap align-items-center">
+                        <span class="badge badge-info mr-2 mb-1">{{ farmer.get_gender_display }}</span>
+                        <span class="badge badge-secondary mr-2 mb-1">{{ farmer.age }} yrs</span>
+                        <span class="badge badge-dark mb-1">{{ farmer.get_farmer_type_display }}</span>
+                    </div>
+                    <div class="mt-2">
+                        <a class="btn btn-outline-secondary btn-sm" href="?nin={{ farmer.nin }}">Refresh</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
+
+        <!-- Chick Requests -->
+        <div class="card card-smooth p-4 mb-4">
+            <h5 class="mb-3">🐥 Chick Requests</h5>
+            {% if chick_requests %}
+            <div class="table-responsive">
+                <table class="table table-sm">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Type</th>
+                            <th>Qty</th>
+                            <th>Status</th>
+                            <th>Decision Note</th>
+                            <th>Submitted</th>
+                            <th>Picked</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for r in chick_requests %}
+                        <tr>
+                            <td>{{ r.id }}</td>
+                            <td>{{ r.get_chick_type_display }}</td>
+                            <td>{{ r.quantity }}</td>
+                            <td><span class="badge pill {{ r.badge_class }}">{{ r.status|title }}</span></td>
+                            <td>
+                                {% if r.decision_note %}
+                                    {{ r.decision_note }}
+                                {% else %}
+                                    <span class="text-muted">—</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ r.submitted_on|date:"M d, Y" }}</td>
+                            <td>
+                                {% if r.is_picked %}
+                                <span class="badge pill badge-primary">Picked</span>
+                                {% if r.picked_on %}
+                                <div class="small muted">{{ r.picked_on|date:"M d, Y" }}</div>
+                                {% endif %}
+                                {% else %}
+                                <span class="text-muted">—</span>
+                                {% endif %}
+                            </td>
+
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <p class="muted mb-0">No chick requests found.</p>
+            {% endif %}
+        </div>
+
+        <!-- Feed Requests -->
+        <div class="card card-smooth p-4 mb-4">
+            <h5 class="mb-3">🧪 Feed Requests</h5>
+            {% if feed_requests %}
+            <div class="table-responsive">
+                <table class="table table-sm">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Feed</th>
+                            <th>Bags</th>
+                            <th>Status</th>
+                            <th>Pickup</th>
+                            <th>Submitted</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for r in feed_requests %}
+                        <tr>
+                            <td>{{ r.id }}</td>
+                            <td>{{ r.get_feed_type_display }}</td>
+                            <td>{{ r.quantity_bags }}</td>
+                            <td><span class="badge pill {{ r.badge_class }}">{{ r.status|title }}</span></td>
+                            <td>
+                                <span class="badge pill {{ r.pickup_badge_class }}">{{ r.pickup_status|title }}</span>
+                                {% if r.picked_on %}
+                                <div class="small muted">{{ r.picked_on|date:"M d, Y H:i" }}</div>
+                                {% endif %}
+                            </td>
+                            <td>{{ r.submitted_on|date:"M d, Y H:i" }}</td>
+                        </tr>
+
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <p class="muted mb-0">No feed requests found.</p>
+            {% endif %}
+        </div>
+
+        <!-- Payments -->
+        <div class="card card-smooth p-4 mb-5">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="mb-0">💳 Payments & Initial Feed Allocation</h5>
+            </div>
+
+            <!-- Summary row -->
+            <div class="row mb-3">
+                <div class="col-md-4 mb-2">
+                    <div class="p-3 bg-light rounded">
+                        <div class="small text-muted">Picked Chick Requests</div>
+                        <div class="h5 mb-0">{{ feed_summary.picked_chick_requests|default:0 }}</div>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-2">
+                    <div class="p-3 bg-light rounded">
+                        <div class="small text-muted">Initial Feed Allocated (mandatory)</div>
+                        <div class="h5 mb-0">{{ feed_summary.allocated_bags|default:0 }} bags</div>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-2">
+                    <div class="p-3 bg-light rounded">
+                        <div class="small text-muted">Payments for Feeds / Both</div>
+                        <div class="h5 mb-0">UGX {{ feed_summary.payments_total_feeds|default:0 }}</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Payments table -->
+            {% if payments %}
+            <div class="table-responsive">
+                <table class="table table-sm">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>For</th>
+                            <th>Amount (UGX)</th>
+                            <th>Notes</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for p in payments %}
+                        <tr>
+                            <td>{{ p.payment_date|date:"M d, Y" }}</td>
+                            <td>{{ p.get_payment_for_display }}</td>
+                            <td>{{ p.amount }}</td>
+                            <td>{{ p.notes|default:"—" }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <p class="muted mb-0">No payments recorded yet.</p>
+            {% endif %}
+        </div>
+
+        {% endif %}
+
+        <div class="text-center mb-5">
+            <a href="{% url 'homepage' %}" class="btn btn-link">← Back to Home</a>
+        </div>
+
+    </div>
+</body>
+
+</html>

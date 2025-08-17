@@ -4,344 +4,494 @@
 <h2>📥 Chick Requests</h2>
 <p class="text-muted">Review pending requests and view approval history.</p>
 
-<!-- Tabs -->
 <ul class="nav nav-tabs mb-3" id="requestTabs" role="tablist">
-    <li class="nav-item">
-        <a class="nav-link active" id="pending-tab" data-toggle="tab" href="#pending" role="tab">⏳ Pending Requests</a>
-    </li>
-    <li class="nav-item">
-        <a class="nav-link" id="approved-tab" data-toggle="tab" href="#approved" role="tab">✅ Approved / Picked</a>
-    </li>
-    <li class="nav-item">
-        <a class="nav-link" id="history-tab" data-toggle="tab" href="#history" role="tab">📜 All History</a>
-    </li>
+  <li class="nav-item">
+    <a class="nav-link {% if active_tab == 'pending' or not active_tab %}active{% endif %}" id="pending-tab" data-toggle="tab" href="#pending" role="tab">⏳ Pending Requests</a>
+  </li>
+  <li class="nav-item">
+    <a class="nav-link {% if active_tab == 'approved' %}active{% endif %}" id="approved-tab" data-toggle="tab" href="#approved" role="tab">✅ Approved / Picked</a>
+  </li>
+  <li class="nav-item">
+    <a class="nav-link {% if active_tab == 'history' %}active{% endif %}" id="history-tab" data-toggle="tab" href="#history" role="tab">📜 All History</a>
+  </li>
 </ul>
 
-<!-- Tab Content -->
-<div class="tab-content" id="requestTabsContent">
-
-    <!-- Pending Requests Tab -->
-    {% if messages %}
-    {% for message in messages %}
+{% if messages %}
+  {% for message in messages %}
     <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-        {{ message }}
-        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-            <span aria-hidden="true">&times;</span>
-        </button>
+      {{ message }}
+      <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
     </div>
-    {% endfor %}
-    {% endif %}
+  {% endfor %}
+{% endif %}
 
+<div class="tab-content" id="requestTabsContent">
+  <!-- Pending -->
+  <div class="tab-pane fade {% if active_tab == 'pending' or not active_tab %}show active{% endif %}" id="pending" role="tabpanel">
+    <div class="card p-3 mb-4">
+      <h5 class="mb-3">⏳ Pending Chick Requests</h5>
 
-    <div class="tab-pane fade show active" id="pending" role="tabpanel">
-        <div class="card p-3 mb-4">
-            <h5 class="mb-3">⏳ Pending Chick Requests</h5>
-
-            <div class="mb-3">
-                <input type="text" class="form-control" placeholder="Search by farmer name, NIN, or request ID...">
-            </div>
-
-            <div class="table-responsive">
-                <table class="table table-sm table-bordered table-hover">
-                    <thead class="thead-light">
-                        <tr>
-                            <th>Request ID</th>
-                            <th>Farmer</th>
-                            <th>NIN</th>
-                            <th>Type</th>
-                            <th>Qty</th>
-                            <th>Farmer Type</th>
-                            <th>Submitted On</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for request in pending_requests %}
-                        <tr>
-                            <td class="align-middle">#REQ{{ request.id }}</td>
-                            <td class="align-middle">{{ request.farmer.name }}</td>
-                            <td class="align-middle">{{ request.farmer.nin }}</td>
-                            <td class="align-middle">{{ request.chick_type|title }}</td>
-                            <td class="align-middle">{{ request.quantity }}</td>
-                            <td class="align-middle">{{ request.farmer.farmer_type|title }}</td>
-                            <td class="align-middle">{{ request.submitted_on|date:"M d, Y" }}</td>
-                            <td class="align-middle">
-                                <form method="post" action="{% url 'approve_reject_request' request.id %}"
-                                    style="display:inline-block;">
-                                    {% csrf_token %}
-                                    <input type="hidden" name="action" value="approve">
-                                    <button type="submit" class="btn btn-sm btn-success">Approve</button>
-                                </form>
-                                <form method="post" action="{% url 'approve_reject_request' request.id %}"
-                                    style="display:inline-block;">
-                                    {% csrf_token %}
-                                    <input type="hidden" name="action" value="reject">
-                                    <button type="submit" class="btn btn-sm btn-outline-danger">Reject</button>
-                                </form>
-                            </td>
-
-                        </tr>
-                        {% empty %}
-                        <tr>
-                            <td colspan="8" class="text-center text-muted">No pending requests found.</td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-
-                </table>
-            </div>
-
+      <form method="get" class="mb-3">
+        <input type="hidden" name="tab" value="pending" />
+        <div class="input-group">
+          <input type="text" name="q" value="{{ q|default_if_none:'' }}" class="form-control" placeholder="Search by farmer name, NIN, or request ID..." />
+          <div class="input-group-append"><button class="btn btn-outline-secondary">Search</button></div>
         </div>
+      </form>
+
+      <div class="table-responsive">
+        <table class="table table-sm table-bordered table-hover">
+          <thead class="thead-light">
+            <tr>
+              <th>Request ID</th><th>Farmer</th><th>NIN</th><th>Type</th><th>Qty</th><th>Notes</th><th>Farmer Type</th><th>Submitted On</th><th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for req in pending_requests %}
+            <tr>
+              <td class="align-middle">#REQ{{ req.id }}</td>
+              <td class="align-middle">{{ req.farmer.name }}</td>
+              <td class="align-middle">{{ req.farmer.nin }}</td>
+              <td class="align-middle">{{ req.chick_type|title }}</td>
+              <td class="align-middle">{{ req.quantity }}</td>
+              <td class="align-middle">
+                {% firstof req.notes req.request_note "" as note %}
+                {% if note %}
+                    {{ note|truncatechars:40 }}
+                    {% if note|length > 40 %}
+                    <a href="#" class="ml-1" data-toggle="modal" data-target="#noteModalPending{{ req.id }}">More…</a>
+                    {% endif %}
+                {% else %}
+                    <span class="text-muted">—</span>
+                {% endif %}
+                </td>
+              <td class="align-middle">{{ req.farmer.farmer_type|title }}</td>
+              <td class="align-middle">{{ req.submitted_on|date:"M d, Y" }}</td>
+              <td class="align-middle">
+                <button class="btn btn-success btn-sm"
+                        data-toggle="modal" data-target="#approveModal"
+                        data-url="{% url 'approve_reject_request' req.id %}"
+                        data-title="Approve REQ{{ req.id }} — {{ req.farmer.name }} ({{ req.chick_type|title }})"
+                        data-chick-type="{{ req.chick_type }}"
+                        data-quantity="{{ req.quantity }}">
+                  Approve
+                </button>
+
+                <button
+                    class="btn btn-outline-danger btn-sm"
+                    data-toggle="modal"
+                    data-target="#rejectModal"
+                    data-url="{% url 'approve_reject_request' req.id %}"
+                    data-title="Reject REQ{{ req.id }} — {{ req.farmer.name }}">
+                    Reject
+                </button>
+
+
+
+
+              </td>
+            </tr>
+            {% firstof req.notes req.request_note "" as note %}
+            <div class="modal fade" id="noteModalPending{{ req.id }}" tabindex="-1" role="dialog"
+                aria-labelledby="noteModalPendingLabel{{ req.id }}" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-scrollable modal-md" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                    <h5 class="modal-title" id="noteModalPendingLabel{{ req.id }}">
+                        Notes — {{ req.farmer.name }} (REQ{{ req.id }})
+                    </h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                    </div>
+                    <div class="modal-body">
+                    {% if note %}
+                        <div style="white-space:pre-wrap">{{ note }}</div>
+                    {% else %}
+                        <span class="text-muted">No notes.</span>
+                    {% endif %}
+                    </div>
+                    <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                    </div>
+                </div>
+                </div>
+            </div>
+            {% empty %}
+            <tr><td colspan="8" class="text-center text-muted">No pending requests found.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
     </div>
+  </div>
 
-    <!-- Approved / Picked Requests Tab -->
-    <div class="tab-pane fade" id="approved" role="tabpanel">
-        <div class="card p-3 mb-4">
-            <h5 class="mb-3">✅ Approved & Picked Requests</h5>
-
-            <div class="mb-3">
-                <input type="text" class="form-control" placeholder="Search by farmer name, NIN, or date...">
-            </div>
-
-            <div class="table-responsive">
-                <table class="table table-bordered table-sm">
-                    <thead class="thead-light">
-                        <tr>
-                            <th>Request ID</th>
-                            <th>Farmer</th>
-                            <th>Type</th>
-                            <th>Qty</th>
-                            <th>Status</th>
-                            <th>Picked On</th>
-                            <th>Pickup Notes</th>
-                            <th>Approved On</th>
-                            <!-- <th>Approved By</th> -->
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for request in approved_requests %}
-                        <tr>
-                            <td>#REQ{{ request.id }}</td>
-                            <td>{{ request.farmer.name }}</td>
-                            <td>{{ request.chick_type|title }}</td>
-                            <td>{{ request.quantity }}</td>
-
-                            <!-- Status shows Picked vs Approved -->
-                            <td>
-                                {% if request.is_picked %}
-                                <span class="badge badge-primary badge-fixed">Picked</span>
-                                {% else %}
-                                <span class="badge badge-success badge-fixed">Approved</span>
-                                {% endif %}
-                            </td>
-
-                            <!-- Picked date -->
-                            <td>
-                                {% if request.is_picked %}
-                                {{ request.picked_on|date:"M d, Y" }}
-                                {% else %}
-                                <span class="text-muted">—</span>
-                                {% endif %}
-                            </td>
-
-                            <!-- Pickup notes -->
-                            <td>
-                                {% if request.pickup_notes %}
-                                {{ request.pickup_notes }}
-                                {% else %}
-                                <em class="text-muted">—</em>
-                                {% endif %}
-                            </td>
-
-                            <td>{{ request.approval_date|date:"M d, Y" }}</td>
-
-                            <!-- Guard approved_by possibly being None -->
-                            <!-- <td>
-                                {% if request.approved_by %}
-                                {{ request.approved_by.get_full_name|default:request.approved_by.username }}
-                                {% else %}
-                                <span class="text-muted">—</span>
-                                {% endif %}
-                            </td> -->
-                        </tr>
-                        {% empty %}
-                        <tr>
-                            <td colspan="9" class="text-center text-muted">No approved requests yet.</td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-
-
-                    </tbody>
-                </table>
-            </div>
+  <!-- Approved -->
+  <div class="tab-pane fade {% if active_tab == 'approved' %}show active{% endif %}" id="approved" role="tabpanel">
+    <div class="card p-3 mb-4">
+      <h5 class="mb-3">✅ Approved & Picked Requests</h5>
+      <form method="get" class="mb-3">
+        <input type="hidden" name="tab" value="approved" />
+        <div class="input-group">
+          <input type="text" name="q" value="{{ q|default_if_none:'' }}" class="form-control" placeholder="Search by farmer name, NIN, request ID, or date..." />
+          <div class="input-group-append"><button class="btn btn-outline-secondary">Search</button></div>
         </div>
+      </form>
+      <div class="table-responsive">
+        <table class="table table-bordered table-sm">
+          <thead class="thead-light">
+            <tr>
+              <th>Request ID</th><th>Farmer</th><th>Type</th><th>Qty</th><th>Status</th><th>Picked On</th><th>Pickup Notes</th><th>Approved On</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for req in approved_requests %}
+            <tr>
+              <td>#REQ{{ req.id }}</td>
+              <td>{{ req.farmer.name }}</td>
+              <td>{{ req.chick_type|title }}</td>
+              <td>{{ req.quantity }}</td>
+              <td>
+                {% if req.is_picked %}
+                  <span class="badge badge-primary badge-fixed">Picked</span>
+                {% else %}
+                  <span class="badge badge-success badge-fixed">Approved</span>
+                {% endif %}
+              </td>
+              <td>{% if req.is_picked %}{{ req.picked_on|date:"M d, Y" }}{% else %}<span class="text-muted">—</span>{% endif %}</td>
+              <td>{% if req.pickup_notes %}{{ req.pickup_notes }}{% else %}<em class="text-muted">—</em>{% endif %}</td>
+              <td>{{ req.approval_date|date:"M d, Y" }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="9" class="text-center text-muted">No approved requests yet.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
     </div>
+  </div>
 
-    <!-- All History Tab -->
-    <div class="tab-pane fade" id="history" role="tabpanel">
-        <div class="card p-3 mb-4">
-            <h5 class="mb-3">📜 All Request History</h5>
-
-            <div class="mb-3">
-                <input type="text" class="form-control" placeholder="Search all records...">
-            </div>
-
-            <div class="table-responsive">
-                <table class="table table-bordered table-sm">
-                    <thead class="thead-light">
-                        <tr>
-                            <th>Farmer</th>
-                            <th>Chick Type</th>
-                            <th>Qty</th>
-                            <th>Chicks (UGX)</th>
-                            <th>Picked?</th>
-                            <th>Feeds</th>
-                            <th>Notes</th>
-                            <th>Submitted On</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for request in history_requests %}
-                        <tr>
-                            <td class="align-bottom">{{ request.farmer.name }}</td>
-                            <td class="align-bottom">{{ request.chick_type|title }}</td>
-                            <td class="align-bottom">{{ request.quantity }}</td>
-
-                            {# Expected / Paid / Balance #}
-                            <td>
-                                <div>Expected: <strong>UGX {{ request.expected_chicks_amount|floatformat:0 }}</strong>
-                                </div>
-                                <div>Paid: UGX {{ request.chicks_paid_today|floatformat:0 }}</div>
-                                <div>Balance: <span
-                                        class="{% if request.chicks_balance > 0 %}text-danger{% else %}text-success{% endif %}">
-                                        UGX {{ request.chicks_balance|floatformat:0 }}</span>
-                                </div>
-                            </td>
-
-                            {# Picked badge + date #}
-                            <td class="align-bottom">
-                                {% if request.is_picked %}
-                                <span class="badge badge-primary badge-fixed">Picked</span>
-                                <div class="small text-muted">{{ request.picked_on|date:"M d, Y" }}</div>
-                                {% else %}
-                                <span class="badge badge-success badge-fixed">Approved</span>
-                                {% endif %}
-                            </td>
-
-                            {# Feeds allocation + due status #}
-                            <td>
-                                {% if request.feeds_allocated_bags %}
-                                <div>{{ request.feeds_allocated_bags }} bag{{ request.feeds_allocated_bags|pluralize }}
-                                </div>
-                                {% if request.feeds_due_date %}
-                                <div class="small text-muted">Due: {{ request.feeds_due_date|date:"M d, Y" }}</div>
-                                {% endif %}
-                                <div>
-                                    {% if request.feeds_status == 'paid' %}
-                                    <span class="badge badge-success badge-fixed">Paid</span>
-                                    {% elif request.feeds_status == 'overdue' %}
-                                    <span class="badge badge-danger badge-fixed">Overdue</span>
-                                    {% elif request.feeds_status == 'due' %}
-                                    <span class="badge badge-warning badge-fixed">Due</span>
-                                    {% else %}
-                                    <span class="text-muted small">—</span>
-                                    {% endif %}
-                                </div>
-                                {% else %}
-                                <span class="text-muted">—</span>
-                                {% endif %}
-                            </td>
-
-                            <td class="notes-preview align-bottom">
-                                {% with note=request.pickup_notes|default:request.notes %}
-                                {% if note %}
-                                {{ note|truncatechars:40 }}
-                                {% if note|length > 40 %}
-                                <a href="#" class="ml-1" data-toggle="modal"
-                                    data-target="#noteModal{{ request.id }}">More…</a>
-                                {% endif %}
-                                {% else %}
-                                <span class="text-muted">—</span>
-                                {% endif %}
-                                {% endwith %}
-                            </td>
-
-
-
-                            <td class="align-bottom">{{ request.submitted_on|date:"M d, Y" }}</td>
-                        </tr>
-                        {% with note=request.pickup_notes|default:request.notes %}
-                        <div class="modal fade" id="noteModal{{ request.id }}" tabindex="-1" role="dialog"
-                            aria-labelledby="noteModalLabel{{ request.id }}" aria-hidden="true">
-                            <div class="modal-dialog modal-dialog-scrollable modal-md" role="document">
-                                <div class="modal-content">
-                                    <div class="modal-header">
-                                        <h5 class="modal-title" id="noteModalLabel{{ request.id }}">
-                                            Notes — {{ request.farmer.name }} (REQ{{ request.id }})
-                                        </h5>
-                                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                                            <span aria-hidden="true">&times;</span>
-                                        </button>
-                                    </div>
-                                    <div class="modal-body">
-                                        {% if note %}
-                                        <div style="white-space:pre-wrap">{{ note }}</div>
-                                        {% else %}
-                                        <span class="text-muted">No notes.</span>
-                                        {% endif %}
-                                    </div>
-                                    <div class="modal-footer">
-                                        <button type="button" class="btn btn-secondary"
-                                            data-dismiss="modal">Close</button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        {% endwith %}
-
-
-                        {% empty %}
-                        <tr>
-                            <td colspan="9" class="text-center text-muted">No historical records yet.</td>
-                        </tr>
-                        {% with note=request.pickup_notes|default:request.notes %}
-                        <div class="modal fade" id="noteModal{{ request.id }}" tabindex="-1" role="dialog"
-                            aria-labelledby="noteModalLabel{{ request.id }}" aria-hidden="true">
-                            <div class="modal-dialog modal-dialog-scrollable modal-md" role="document">
-                                <div class="modal-content">
-                                    <div class="modal-header">
-                                        <h5 class="modal-title" id="noteModalLabel{{ request.id }}">
-                                            Notes — {{ request.farmer.name }} (REQ{{ request.id }})
-                                        </h5>
-                                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                                            <span aria-hidden="true">&times;</span>
-                                        </button>
-                                    </div>
-                                    <div class="modal-body">
-                                        {% if note %}
-                                        <div style="white-space:pre-wrap">{{ note }}</div>
-                                        {% else %}
-                                        <span class="text-muted">No notes.</span>
-                                        {% endif %}
-                                    </div>
-                                    <div class="modal-footer">
-                                        <button type="button" class="btn btn-secondary"
-                                            data-dismiss="modal">Close</button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        {% endwith %}
-
-                        {% endfor %}
-                    </tbody>
-                </table>
-
-
-            </div>
+  <!-- History -->
+  <div class="tab-pane fade {% if active_tab == 'history' %}show active{% endif %}" id="history" role="tabpanel">
+    <div class="card p-3 mb-4">
+      <h5 class="mb-3">📜 All Request History</h5>
+      <form method="get" class="mb-3">
+        <input type="hidden" name="tab" value="history" />
+        <div class="input-group">
+          <input type="text" name="q" value="{{ q|default_if_none:'' }}" class="form-control" placeholder="Search all records..." />
+          <div class="input-group-append"><button class="btn btn-outline-secondary">Search</button></div>
         </div>
-    </div>
+      </form>
+      <div class="table-responsive">
+        <table class="table table-bordered table-sm">
+          <thead class="thead-light">
+            <tr>
+              <th>Farmer</th><th>Chick Type</th><th>Qty</th><th>Chicks (UGX)</th><th>Picked?</th><th>Feeds</th><th>Notes</th><th>Submitted On</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for req in history_requests %}
+            <tr>
+              <td class="align-bottom">{{ req.farmer.name }}</td>
+              <td class="align-bottom">{{ req.chick_type|title }}</td>
+              <td class="align-bottom">{{ req.quantity }}</td>
+              <td>
+                <div>Expected: <strong>UGX {{ req.expected_chicks_amount|floatformat:0 }}</strong></div>
+                <div>Paid: UGX {{ req.chicks_paid_today|floatformat:0 }}</div>
+                <div>Balance: <span class="{% if req.chicks_balance > 0 %}text-danger{% else %}text-success{% endif %}">UGX {{ req.chicks_balance|floatformat:0 }}</span></div>
+              </td>
+              <td class="align-bottom">
+                {% if req.is_picked %}
+                  <span class="badge badge-primary badge-fixed">Picked</span>
+                  <div class="small text-muted">{{ req.picked_on|date:"M d, Y" }}</div>
+                {% else %}
+                  <span class="badge badge-success badge-fixed">Approved</span>
+                {% endif %}
+              </td>
+              <td>
+                {% if req.feeds_allocated_bags %}
+                  <div>{{ req.feeds_allocated_bags }} bag{{ req.feeds_allocated_bags|pluralize }}</div>
+                  {% if req.feeds_due_date %}<div class="small text-muted">Due: {{ req.feeds_due_date|date:"M d, Y" }}</div>{% endif %}
+                  <div>
+                    {% if req.feeds_status == 'paid' %}
+                      <span class="badge badge-success badge-fixed">Paid</span>
+                    {% elif req.feeds_status == 'overdue' %}
+                      <span class="badge badge-danger badge-fixed">Overdue</span>
+                    {% elif req.feeds_status == 'due' %}
+                      <span class="badge badge-warning badge-fixed">Due</span>
+                    {% else %}
+                      <span class="text-muted small">—</span>
+                    {% endif %}
+                  </div>
+                {% else %}
+                  <span class="text-muted">—</span>
+                {% endif %}
+              </td>
+              <td class="notes-preview align-bottom">
+                {% firstof req.pickup_notes req.notes "" as note %}
+                {% if note %}
+                  {{ note|truncatechars:40 }}
+                  {% if note|length > 40 %}<a href="#" class="ml-1" data-toggle="modal" data-target="#noteModal{{ req.id }}">More…</a>{% endif %}
+                {% else %}
+                  <span class="text-muted">—</span>
+                {% endif %}
+              </td>
+              <td class="align-bottom">{{ req.submitted_on|date:"M d, Y" }}</td>
+            </tr>
 
+            {% firstof req.pickup_notes req.notes "" as note %}
+            <div class="modal fade" id="noteModal{{ req.id }}" tabindex="-1" role="dialog" aria-labelledby="noteModalLabel{{ req.id }}" aria-hidden="true">
+              <div class="modal-dialog modal-dialog-scrollable modal-md" role="document">
+                <div class="modal-content">
+                  <div class="modal-header">
+                    <h5 class="modal-title" id="noteModalLabel{{ req.id }}">Notes — {{ req.farmer.name }} (REQ{{ req.id }})</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                  </div>
+                  <div class="modal-body">{% if note %}<div style="white-space:pre-wrap">{{ note }}</div>{% else %}<span class="text-muted">No notes.</span>{% endif %}</div>
+                  <div class="modal-footer"><button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button></div>
+                </div>
+              </div>
+            </div>
+
+            {% empty %}
+            <tr><td colspan="9" class="text-center text-muted">No historical records yet.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
 </div>
+{% endblock %}
+
+{% block modals %}
+  {% include "manager/approval_modal.html" %}
+  {% include "manager/reject_modal.html" %}
+{% endblock %}
+
+{% block scripts %}
+
+<script>
+  // When the modal opens, fill the hidden id and the title
+  $('#rejectModal').on('show.bs.modal', function (event) {
+    const button = $(event.relatedTarget);
+    const id     = button.data('id');      // comes from data-id on the button
+    const title  = button.data('title') || 'Reject Request';
+    const modal  = $(this);
+
+    modal.find('.modal-title').text(title);
+    modal.find('#rejectRequestId').val(id);
+    modal.find('#rejectNote').val('');
+  });
+</script>
+
+<script>
+  // Wire the reject modal on open: set form action & title
+  $('#rejectModal').on('show.bs.modal', function (event) {
+    const button = $(event.relatedTarget);
+    const url    = button.data('url');            // 
+    const title  = button.data('title') || 'Reject Request';
+
+    const modal = $(this);
+    modal.find('.modal-title').text(title);
+    modal.find('#rejectForm').attr('action', url);
+    modal.find('#rejectNote').val('');
+  });
+</script>
+
+
+<script>
+  $(document).ready(function () {
+    $('#rejectModal').on('show.bs.modal', function (event) {
+      const button = $(event.relatedTarget);  // Button that triggered the modal
+      const url    = button.data('url');      // Extract the data-url attribute
+      const title  = button.data('title') || 'Reject Request';
+      const modal  = $(this);
+
+      modal.find('.modal-title').text(title);
+      modal.find('#rejectForm').attr('action', url);
+      modal.find('#rejectNote').val(''); // clear textarea when modal opens
+    });
+  });
+</script>
+
+
+<script>
+  // Wire the reject modal on open
+  $('#rejectModal').on('show.bs.modal', function (event) {
+    const button = $(event.relatedTarget);
+    const url    = button.data('url');   // already rendered into the button's data-url
+    const title  = button.data('title') || 'Reject Request';
+
+    const modal = $(this);
+    modal.find('.modal-title').text(title);
+    modal.find('#rejectForm').attr('action', url);
+    modal.find('#rejectNote').val('');
+  });
+</script>
+
+<script>
+$(function () {
+  // 1) Parse server-provided batches grouped by chick_type
+  let BATCHES = {};
+  try { BATCHES = JSON.parse('{{ batch_json|escapejs }}'); } catch(e) { BATCHES = {}; }
+
+  const $form = $('#approveForm');
+  const $tbody = $('#approveModalBody');
+  const $btnSubmit = $('#approveForm button[type="submit"]');
+
+  function titleCase(s){ return (s||'').replace(/_/g,' ').replace(/\b\w/g, c=>c.toUpperCase()); }
+
+  // Sum current allocations
+  function sumAlloc() {
+    let sum = 0;
+    $tbody.find('.alloc-input').each(function(){ sum += parseInt(this.value || '0', 10); });
+    return sum;
+  }
+
+  // Recalc remaining + enable/disable submit
+  function recalc() {
+    const req = parseInt($('#approveRequested').val() || '0', 10);
+    const sum = sumAlloc();
+    $('#approveRemaining').val(req - sum);
+    $btnSubmit.prop('disabled', sum !== req);
+  }
+
+  // Clamp a row input to min/max and remaining
+  function clampRowInput($input) {
+    const req = parseInt($('#approveRequested').val() || '0', 10);
+    const avail = parseInt($input.attr('max') || '0', 10);
+    const current = parseInt($input.val() || '0', 10);
+
+    // remaining excluding this row's current value
+    let sumOthers = 0;
+    $tbody.find('.alloc-input').not($input).each(function(){ sumOthers += parseInt(this.value || '0', 10); });
+    const need = Math.max(req - sumOthers, 0);
+
+    let nextVal = isNaN(current) ? 0 : current;
+    nextVal = Math.max(0, Math.min(nextVal, avail, need));
+    $input.val(nextVal);
+  }
+
+  // Build one row (number input + row actions)
+  function rowHtml(b) {
+    return `
+      <tr data-stock-id="${b.id}" data-available="${b.quantity}">
+        <td>${b.id}</td>
+        <td>${titleCase(b.chick_type)}</td>
+        <td>${b.age_days ?? ''}</td>
+        <td>${b.quantity}</td>
+        <td>
+          <input type="number"
+                 class="form-control form-control-sm alloc-input"
+                 value="0" min="0" max="${b.quantity}" style="width:110px" />
+        </td>
+        <td>
+          <div class="btn-group btn-group-sm" role="group">
+            <button type="button" class="btn btn-outline-secondary row-max">Max</button>
+            <button type="button" class="btn btn-outline-secondary row-fill">Fill</button>
+          </div>
+        </td>
+      </tr>`;
+  }
+
+  // When modal opens, populate rows for the selected type (FIFO = order shown)
+  $('#approveModal').on('show.bs.modal', function (event) {
+    const button = $(event.relatedTarget);
+    const url    = button.data('url');
+    const ctype  = button.data('chickType') || button.data('chick-type') || button.data('type');
+    const reqQty = parseInt(button.data('quantity') || '0', 10);
+    const title  = button.data('title') || 'Approve';
+
+    // Header fields
+    $('#approveModalLabel').text(title);
+    $form.attr('action', url);
+    $('#approveType').val(titleCase(ctype));
+    $('#approveRequested').val(reqQty);
+    $('#approveRemaining').val(reqQty);
+
+    // Rows
+    $tbody.empty();
+    (BATCHES[ctype] || []).forEach(b => $tbody.append(rowHtml(b)));
+
+    recalc();
+  });
+
+  // Clear allocations
+  $('#clearAllocBtn').on('click', function(){
+    $tbody.find('.alloc-input').val(0);
+    recalc();
+  });
+
+  // Global FIFO auto-fill (top→down)
+  $('#autoFillBtn').on('click', function(){
+    const req = parseInt($('#approveRequested').val() || '0', 10);
+    let need = req;
+    $tbody.find('tr').each(function(){
+      const $row = $(this);
+      const avail = parseInt($row.data('available') || '0', 10);
+      const $input = $row.find('.alloc-input');
+
+      // remaining excluding this row's current value
+      let sumOthers = 0;
+      $tbody.find('.alloc-input').not($input).each(function(){ sumOthers += parseInt(this.value || '0', 10); });
+      let remaining = Math.max(req - sumOthers, 0);
+
+      const take = Math.min(avail, remaining);
+      $input.val(take);
+      need -= take;
+      if (need <= 0) return false; // break
+    });
+    recalc();
+  });
+
+  // Per-row: Max = allocate as much as possible (bounded by remaining and batch availability)
+  $tbody.on('click', '.row-max', function(){
+    const req = parseInt($('#approveRequested').val() || '0', 10);
+    const $row = $(this).closest('tr');
+    const $input = $row.find('.alloc-input');
+    const avail = parseInt($input.attr('max') || '0', 10);
+
+    let sumOthers = 0;
+    $tbody.find('.alloc-input').not($input).each(function(){ sumOthers += parseInt(this.value || '0', 10); });
+    const need = Math.max(req - sumOthers, 0);
+
+    $input.val(Math.min(avail, need));
+    recalc();
+  });
+
+  // Per-row: Fill = set this row to exactly the remaining amount (if <= avail)
+  $tbody.on('click', '.row-fill', function(){
+    const req = parseInt($('#approveRequested').val() || '0', 10);
+    const $row = $(this).closest('tr');
+    const $input = $row.find('.alloc-input');
+    const avail = parseInt($input.attr('max') || '0', 10);
+
+    let sumOthers = 0;
+    $tbody.find('.alloc-input').not($input).each(function(){ sumOthers += parseInt(this.value || '0', 10); });
+    const need = Math.max(req - sumOthers, 0);
+
+    $input.val(Math.min(avail, need));
+    recalc();
+  });
+
+  // Typing directly: clamp value and recalc
+  $tbody.on('input', '.alloc-input', function(){
+    clampRowInput($(this));
+    recalc();
+  });
+
+  // On submit pack allocations[]=stock_id:qty (only >0)
+  $form.on('submit', function () {
+    $(this).find('input[name="allocations[]"]').remove();
+    $tbody.find('tr').each(function () {
+      const sid = $(this).data('stock-id');
+      const qty = parseInt($(this).find('.alloc-input').val() || '0', 10);
+      if (qty > 0) {
+        $('<input>').attr({type:'hidden', name:'allocations[]', value: `${sid}:${qty}`}).appendTo($form);
+      }
+    });
+  });
+});
+</script>
 {% endblock %}
