@@ -471,35 +471,31 @@ def approve_reject_request(request, request_id):
         req.status = 'rejected'  # matches STATUS_CHOICES
         update_fields = ['status']
 
-        # Save decision note if the field exists; otherwise fall back to `notes`
-        if hasattr(req, 'decision_note'):
-            req.decision_note = decision_note or None
-            update_fields.append('decision_note')
-        elif decision_note and hasattr(req, 'notes'):
-            req.notes = decision_note
-            update_fields.append('notes')
+        # Save decision note (your model has decision_note)
+        req.decision_note = decision_note or None
+        update_fields.append('decision_note')
 
-        # Optional metadata if these fields exist on your model
-        if hasattr(req, 'decision_by'):
-            req.decision_by = request.user if request.user.is_authenticated else None
-            update_fields.append('decision_by')
-
-        if hasattr(req, 'decision_at'):
-            req.decision_at = timezone.now()
-            update_fields.append('decision_at')
+        # Decision metadata
+        req.decision_by = request.user if request.user.is_authenticated else None
+        req.decision_at = timezone.now()
+        update_fields += ['decision_by', 'decision_at']
 
         req.save(update_fields=list(set(update_fields)))
         messages.warning(
             request,
             f"Request #REQ{req.id} rejected" + (f": {decision_note}" if decision_note else "")
         )
-    return redirect('/manager/requests/?tab=pending')
+        return redirect('/manager/requests/?tab=pending')   # <-- keep this INSIDE the reject block
 
-
-    # Must be approve from here on
+    # ---------- must be APPROVE from here ----------
     if action != 'approve':
         messages.error(request, 'Invalid action.')
         return redirect('/manager/requests/?tab=pending')
+
+    # Store decision metadata for approve as well
+    req.decision_note = decision_note or None
+    req.decision_by = request.user if request.user.is_authenticated else None
+    req.decision_at = timezone.now()
 
     # ---------- APPROVE WITH EXPLICIT ALLOCATIONS ----------
     requested_type = req.chick_type
@@ -518,8 +514,7 @@ def approve_reject_request(request, request_id):
                 parsed.append((sid, q))
                 total_alloc += q
         except Exception:
-            # ignore any malformed items
-            pass
+            pass  # ignore malformed items
 
     if total_alloc != requested_qty or not parsed:
         messages.error(
@@ -535,7 +530,7 @@ def approve_reject_request(request, request_id):
     except ValueError:
         max_age_days = None
 
-    date_field = 'recorded_on'  # adjust if your stock age comes from a different field
+    date_field = 'recorded_on'
     today = timezone.localdate()
 
     with transaction.atomic():
@@ -589,7 +584,7 @@ def approve_reject_request(request, request_id):
             stock.save(update_fields=['quantity'])
             ChickAllocation.objects.create(request=req, stock=stock, quantity=qty)
 
-        # Mark approved + approval metadata + decision metadata
+        # Mark approved + approval metadata + decision metadata (already set above)
         req.status = 'approved'
         req.approval_date = today
         req.approved_by = request.user if request.user.is_authenticated else None

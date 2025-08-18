@@ -38,7 +38,7 @@
           </div>
 
           <div class="table-responsive">
-            <table class="table table-sm table-bordered">
+            <table class="table table-sm table-bordered mb-3">
               <thead class="thead-light">
                 <tr>
                   <th>Batch ID</th>
@@ -52,6 +52,18 @@
               <tbody id="approveModalBody"><!-- rows injected by JS --></tbody>
             </table>
           </div>
+
+          <!-- Decision note lives INSIDE modal-body -->
+          <div class="form-group">
+            <label for="approveDecisionNote">Decision note (optional)</label>
+            <textarea
+              class="form-control"
+              id="approveDecisionNote"
+              name="decision_note"
+              rows="2"
+              placeholder="e.g., Approving 300 from batches 7 & 9."></textarea>
+          </div>
+
           <small class="text-muted d-block">Allocations must equal the requested quantity.</small>
         </div>
 
