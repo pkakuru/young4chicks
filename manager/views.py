@@ -28,6 +28,60 @@ from sales.models import (
     Manufacturer, Supplier, Payment, FeedRequest
 )
 
+import html
+import re
+
+def _simple_to_html(text: str) -> str:
+    """
+    Minimal converter:
+    - Escapes HTML
+    - Turns lines starting with '- ' or '* ' into <ul><li>…</li></ul>
+    - Preserves blank-line spacing
+    - Adds very light **bold** and *italic* support
+    """
+    if not text:
+        return ""
+
+    # Escape any HTML first so we control what’s rendered
+    text = html.escape(text)
+
+    lines = text.splitlines()
+    out = []
+    in_list = False
+
+    def close_list():
+        nonlocal in_list
+        if in_list:
+            out.append("</ul>")
+            in_list = False
+
+    for raw in lines:
+        line = raw.rstrip()
+
+        if re.match(r"^\s*[-*]\s+", line):
+            if not in_list:
+                out.append("<ul>")
+                in_list = True
+            item = re.sub(r"^\s*[-*]\s+", "", line)
+            out.append(f"<li>{item}</li>")
+        elif line.strip() == "":
+            close_list()
+            out.append("<br>")
+        else:
+            close_list()
+            out.append(f"<p>{line}</p>")
+
+    close_list()
+
+    html_text = "\n".join(out)
+
+    # Optional: lightweight bold/italic
+    html_text = re.sub(r"\*\*(.+?)\*\*", r"<strong>\1</strong>", html_text)
+    html_text = re.sub(r"(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)", r"<em>\1</em>", html_text)
+
+    return html_text
+
+
 # Create your views here.
 #============================
 # 1) DASHBOARD
@@ -1145,12 +1199,20 @@ def announcements_view(request):
 @require_POST
 def create_announcement(request):
     title = (request.POST.get('title') or '').strip()
-    content = (request.POST.get('content') or '').strip()
-    if title and content:
-        Announcement.objects.create(title=title, content=content)
-        messages.success(request, "Announcement posted.")
-    else:
+    content_raw = (request.POST.get('content') or '').strip()
+
+    if not title or not content_raw:
         messages.error(request, "Title and message are required.")
+        return redirect('manager_announcements')
+
+    # Convert manager-entered text into clean HTML that supports bullets
+    content_html = _simple_to_html(content_raw)
+
+    Announcement.objects.create(
+        title=title,
+        content=content_html,   # store HTML here
+    )
+    messages.success(request, "Announcement posted.")
     return redirect('manager_announcements')
 
 @require_POST

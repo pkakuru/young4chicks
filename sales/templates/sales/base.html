@@ -63,6 +63,14 @@
       margin-left: 230px;
       padding: 2rem;
     }
+
+    .sidebar .separator {
+    height: 0.5px;                  /* line thickness */
+    background: #e5e7eb;          /* line color */
+    width: 70%;                   /* control how wide it is */
+    margin: 0.75rem auto;         /* vertical spacing + center horizontally */
+    border-radius: 2px;           /* optional: rounded ends */
+  }
   </style>
 </head>
 <body>
@@ -71,11 +79,14 @@
     <div class="sidebar-content">
       <h4>Young4ChickS</h4>
       <a href="{% url 'sales_dashboard' %}" class="{% if request.resolver_match.url_name == 'sales_dashboard' %}active{% endif %}">📊 Dashboard</a>
-      <a href="{% url 'register_farmer' %}" class="{% if request.resolver_match.url_name == 'register_farmer' %}active{% endif %}">📝 Register Farmer</a>
-      <a href="{% url 'submit_chick_request' %}" class="{% if request.resolver_match.url_name == 'submit_chick_request' %}active{% endif %}">📥 Submit Request</a>
+      <div class="separator"></div>
+      <a href="{% url 'register_farmer' %}" class="{% if request.resolver_match.url_name == 'register_farmer' %}active{% endif %}">📝 Register Farmers</a>
+      <a href="{% url 'submit_chick_request' %}" class="{% if request.resolver_match.url_name == 'submit_chick_request' %}active{% endif %}">📥 Submit Requests</a>
       <a href="{% url 'sales_history' %}" class="{% if request.resolver_match.url_name == 'sales_history' %}active{% endif %}">📄 Farmer History</a>
+      <div class="separator"></div>
       <a href="{% url 'sales_pickup' %}" class="{% if request.resolver_match.url_name == 'sales_pickup' %}active{% endif %}">✅ Chicks Pickup</a>
       <a href="{% url 'sales_feed_pickup' %}" class="{% if request.resolver_match.url_name == 'sales_feed_pickup' %}active{% endif %}">✅ Feeds Pickup</a>
+      <div class="separator"></div>
       <a href="{% url 'logout' %}" class="text-danger">🚪 Logout</a>
     </div>
     <div class="sidebar-footer">      

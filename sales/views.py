@@ -290,8 +290,8 @@ def submit_chick_request(request):
                 farmer=farmer,
                 feed_type=feed_type,
                 quantity_bags=quantity_bags,
-                # requested_by=request.user,  # when auth is ready
-                requested_by=default_user,
+                requested_by=request.user,  # when auth is ready
+                #requested_by=default_user,
                 approval_notes=approval_notes,
                 status='pending'
             )
@@ -302,8 +302,8 @@ def submit_chick_request(request):
 
     # temporary: filter by default user until auth is ready
     from home.models import User
-    default_user = User.objects.get(username='peter')
-    feed_requests = FeedRequest.objects.filter(requested_by=default_user).order_by('-submitted_on')
+    default_user = User.objects.get(username=request.user)
+    feed_requests = FeedRequest.objects.filter(requested_by=request.user).order_by('-submitted_on')
 
     return render(request, 'sales/submit_request.html', {
         'farmers': farmers,
@@ -463,7 +463,7 @@ def mark_request_as_picked(request, request_id):
                 distribution_type='initial',
                 quantity_bags=take,
                 due_date=date.today() + timedelta(days=60),  # 2 months deferral
-                recorded_by=default_user,  # request.user
+                recorded_by=request.user,  # request.user
                 notes='Auto-issued during chick pickup',
             )
             created_distributions.append(fd)
@@ -586,7 +586,7 @@ def mark_feed_request_as_picked(request, request_id):
                 feed_stock=stock,
                 distribution_type='purchase',
                 quantity_bags=take,
-                recorded_by=default_user,  # request.user
+                recorded_by=request.user,  # request.user
                 notes=f"Purchase for FeedRequest #{feed_req.id}" + (f". {notes}" if notes else "")
             )
             remaining -= take

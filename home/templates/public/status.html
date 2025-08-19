@@ -1,3 +1,4 @@
+{% load humanize %}
 <!DOCTYPE html>
 <html lang="en">
 
@@ -178,61 +179,104 @@
         </div>
 
         <!-- Payments -->
-        <div class="card card-smooth p-4 mb-5">
-            <div class="d-flex justify-content-between align-items-center mb-3">
-                <h5 class="mb-0">💳 Payments & Initial Feed Allocation</h5>
-            </div>
+        <!-- Payments & balances -->
+<div class="card card-smooth p-4 mb-5">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h5 class="mb-0">💳 Payments & Balances</h5>
+  </div>
 
-            <!-- Summary row -->
-            <div class="row mb-3">
-                <div class="col-md-4 mb-2">
-                    <div class="p-3 bg-light rounded">
-                        <div class="small text-muted">Picked Chick Requests</div>
-                        <div class="h5 mb-0">{{ feed_summary.picked_chick_requests|default:0 }}</div>
-                    </div>
-                </div>
-                <div class="col-md-4 mb-2">
-                    <div class="p-3 bg-light rounded">
-                        <div class="small text-muted">Initial Feed Allocated (mandatory)</div>
-                        <div class="h5 mb-0">{{ feed_summary.allocated_bags|default:0 }} bags</div>
-                    </div>
-                </div>
-                <div class="col-md-4 mb-2">
-                    <div class="p-3 bg-light rounded">
-                        <div class="small text-muted">Payments for Feeds / Both</div>
-                        <div class="h5 mb-0">UGX {{ feed_summary.payments_total_feeds|default:0 }}</div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Payments table -->
-            {% if payments %}
-            <div class="table-responsive">
-                <table class="table table-sm">
-                    <thead>
-                        <tr>
-                            <th>Date</th>
-                            <th>For</th>
-                            <th>Amount (UGX)</th>
-                            <th>Notes</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for p in payments %}
-                        <tr>
-                            <td>{{ p.payment_date|date:"M d, Y" }}</td>
-                            <td>{{ p.get_payment_for_display }}</td>
-                            <td>{{ p.amount }}</td>
-                            <td>{{ p.notes|default:"—" }}</td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-            {% else %}
-            <p class="muted mb-0">No payments recorded yet.</p>
-            {% endif %}
+  <!-- Summary row -->
+  <div class="row mb-3">
+    <div class="col-md-3 mb-2">
+      <div class="p-3 bg-light rounded">
+        <div class="small text-muted">Chicks Picked</div>
+        <div class="h5 mb-0">
+          {{ feed_summary.picked_chicks|default:0 }}
+          {% if feed_summary.expected_chicks_amount is not None %}
+            <small class="text-muted"> • UGX {{ feed_summary.expected_chicks_amount|floatformat:0 | intcomma }}</small>
+          {% endif %}
         </div>
+      </div>
+    </div>
+
+    <div class="col-md-3 mb-2">
+      <div class="p-3 bg-light rounded">
+        <div class="small text-muted">Initial Feed Allocated</div>
+        <div class="h5 mb-0">
+          {{ feed_summary.allocated_bags|default:0 }} bags
+          {% if feed_summary.expected_feeds_amount is not None %}
+            <small class="text-muted"> • UGX {{ feed_summary.expected_feeds_amount|floatformat:0 | intcomma }}</small>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-3 mb-2">
+      <div class="p-3 bg-light rounded">
+        <div class="small text-muted">Payments Received</div>
+        <div class="h5 mb-0">
+          UGX {{ feed_summary.total_paid|default:0|floatformat:0 | intcomma}}
+          <div class="small text-muted">
+            Chicks: UGX {{ feed_summary.paid_chicks|default:0|floatformat:0 | intcomma }} <br>
+            Feeds: UGX {{ feed_summary.paid_feeds|default:0|floatformat:0 | intcomma}}
+            
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-3 mb-2">
+      <div class="p-3 bg-light rounded">
+        <div class="small text-muted">Outstanding Balance</div>
+        <div class="h5 mb-0">
+          UGX {{ feed_summary.outstanding|default:0|floatformat:0 | intcomma }}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Payments table -->
+  {% if payments %}
+    <div class="table-responsive">
+      <table class="table table-sm">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Category</th>
+            <th>Amount (UGX)</th>
+            <th>Notes</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for p in payments %}
+          <tr>
+            <td>{{ p.payment_date|date:"M d, Y" }}</td>
+            <td>
+              {% if p.payment_for == 'both' %}
+                Chicks &amp; Feeds
+              {% else %}
+                {{ p.get_payment_for_display }}
+              {% endif %}
+            </td>
+            <td>{{ p.amount|floatformat:0 | intcomma }}</td>
+            <td>{{ p.notes|default:"—" }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+        <tfoot>
+          <tr>
+            <th colspan="2" class="text-right">Total Paid</th>
+            <th>UGX {{ feed_summary.total_paid|default:0|floatformat:0 | intcomma }}</th>
+            <th></th>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  {% else %}
+    <p class="muted mb-0">No payments recorded yet.</p>
+  {% endif %}
+</div>
+
 
         {% endif %}
 

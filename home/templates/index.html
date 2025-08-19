@@ -50,8 +50,74 @@
     .btn-ghost:hover { background: var(--primary); color: #fff; }
 
     /* ANNOUNCEMENT RIBBON */
-    .ribbon { background: linear-gradient(90deg, var(--primary), #8b5cf6, #00c389); color: #fff; border-radius: 12px; padding: .9rem 1.2rem; box-shadow: 0 10px 30px rgba(31,42,68,.12); position: relative; z-index: 2; }
-    .ribbon .title { font-weight: 700; font-size: .95rem; text-transform: uppercase; letter-spacing: .06em; }
+    .ribbon {
+      border-radius: 12px;
+      padding: .9rem 1.2rem;
+      position: relative;
+      z-index: 2;
+    }
+
+    /* stack vertically instead of side-by-side */
+    .ribbon .wrap { display: block; }
+
+    .ribbon .title {
+      display: block;
+      font-weight: 700;
+      font-size: .95rem;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      margin-bottom: .35rem;   /* space below the title */
+    }
+
+    .ribbon .body { display: block; }
+
+    /* fine-tuning for content spacing */
+    .ribbon .announcement-content p { margin: .25rem 0 .35rem; }
+    .ribbon .announcement-content ul,
+    .ribbon .announcement-content ol { margin: .25rem 0 .35rem; padding-left: 1.2rem; }
+    .ribbon .announcement-content li { margin: .15rem 0; }
+
+    /* keep your gradient look */
+    .ribbon--gradient {
+      background: linear-gradient(90deg, var(--primary, #4f46e5), #8b5cf6, #00c389);
+      color: #fff;
+      box-shadow: 0 10px 30px rgba(31,42,68,.12);
+    }
+    .ribbon--gradient .title,
+    .ribbon--gradient .announcement-content,
+    .ribbon--gradient a,
+    .ribbon--gradient small { color: rgba(255,255,255,.95); }
+    .ribbon--gradient a { text-decoration: underline; }
+
+    /* Utility alignment classes */
+    .align-center {
+        text-align: center;
+    }
+
+    .align-justify {
+        text-align: justify;
+        text-align-last: center; /* keeps last line balanced */
+    }
+
+    .announcement {
+      text-align: justify;
+    }
+
+    .announcement {
+      text-align: center;
+      padding: 0 30px;
+      
+    }
+
+    .announcement {
+      text-align: justify;
+      padding: 0 30px;
+    }
+
+    .padded {
+      padding: 0.5rem 1rem;
+    }
+
 
     /* SECTIONS */
     .section { padding: 2.5rem 0; }
@@ -119,24 +185,26 @@
 
   <div class="container mt-4">
   <!-- Announcement ribbon -->
-  <div class="ribbon">
+  <div class="ribbon ribbon--gradient">
+    <div class="announcement align-center padded">
     {% if latest_announcement %}
-      <div class="d-flex flex-wrap align-items-start">
-        <span class="title mr-3">Latest Announcement</span>
-        <div>
+      <div class="wrap">
+        <!-- <span class="title">Latest Announcement</span> -->
+        <div class="body">
           <strong>{{ latest_announcement.title }}</strong>
-          <div class="ml-2 announcement-content">
-            {{ latest_announcement.content|linebreaks|safe }}
+          <div class="announcement-content">
+            {{ latest_announcement.content|safe }}
           </div>
-          <small class="ml-2" style="opacity:.9;">
-            ({{ latest_announcement.posted_on|date:"M d, Y H:i" }})
-          </small>
+          <small>({{ latest_announcement.posted_on|date:"M d, Y H:i" }})</small>
         </div>
       </div>
     {% else %}
       <div class="text-center">No announcements at the moment.</div>
     {% endif %}
+    </div>
   </div>
+
+
 </div>
 
 
